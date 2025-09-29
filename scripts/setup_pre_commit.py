@@ -17,7 +17,7 @@ from pathlib import Path
 
 def run_command(command, description):
     """Выполняет команду и выводит результат."""
-    print(f"🔄 {description}...")
+    print(f"{description}...")
     try:
         result = subprocess.run(
             command, 
@@ -26,13 +26,13 @@ def run_command(command, description):
             capture_output=True, 
             text=True
         )
-        print(f"✅ {description} - успешно")
+        print(f"{description} - успешно")
         if result.stdout:
             print(f"   Вывод: {result.stdout.strip()}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ {description} - ошибка")
-        print(f"   Код ошибки: {e.returncode}")
+        print(f"{description} - ошибка")
+        print(f"Код ошибки: {e.returncode}")
         if e.stdout:
             print(f"   Вывод: {e.stdout.strip()}")
         if e.stderr:
@@ -42,11 +42,11 @@ def run_command(command, description):
 
 def check_python_version():
     """Проверяет версию Python."""
-    print("🐍 Проверка версии Python...")
+    print("Проверка версии Python...")
     if sys.version_info < (3, 8):
-        print("❌ Требуется Python 3.8 или выше")
+        print("Требуется Python 3.8 или выше")
         return False
-    print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+    print(f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
     return True
 
 
@@ -82,7 +82,7 @@ def create_secrets_baseline():
             "Создание baseline для detect-secrets"
         )
     else:
-        print("✅ Baseline для detect-secrets уже существует")
+        print("Baseline для detect-secrets уже существует")
         return True
 
 
@@ -105,7 +105,7 @@ def update_hooks():
 def show_help():
     """Показывает справку по использованию."""
     print("""
-🔧 Настройка Pre-commit Hooks для проекта кредитного скоринга
+Настройка Pre-commit Hooks для проекта кредитного скоринга
 
 Использование:
     python scripts/setup_pre_commit.py [ОПЦИИ]
@@ -142,7 +142,7 @@ def main():
         show_help()
         return 0
     
-    print("🚀 Настройка Pre-commit Hooks для проекта кредитного скоринга")
+    print("Настройка Pre-commit Hooks для проекта кредитного скоринга")
     print("=" * 60)
     
     # Проверяем версию Python
@@ -151,48 +151,48 @@ def main():
     
     # Устанавливаем pre-commit
     if not install_pre_commit():
-        print("❌ Не удалось установить pre-commit")
+        print("Не удалось установить pre-commit")
         return 1
     
     # Обновляем hooks если нужно
     if "--update" in args:
         if not update_hooks():
-            print("❌ Не удалось обновить hooks")
+            print("Не удалось обновить hooks")
             return 1
     
     # Устанавливаем hooks
     if not install_hooks():
-        print("❌ Не удалось установить pre-commit hooks")
+        print("Не удалось установить pre-commit hooks")
         return 1
     
     # Устанавливаем hooks для CI
     if not install_hooks_ci():
-        print("❌ Не удалось установить pre-commit hooks для CI")
+        print("Не удалось установить pre-commit hooks для CI")
         return 1
     
     # Создаем baseline для detect-secrets
     if not create_secrets_baseline():
-        print("❌ Не удалось создать baseline для detect-secrets")
+        print("Не удалось создать baseline для detect-secrets")
         return 1
     
     # Если только установка, не запускаем проверки
     if "--install-only" in args:
-        print("\n✅ Pre-commit hooks установлены успешно!")
-        print("💡 Теперь hooks будут автоматически запускаться при коммитах")
+        print("\nPre-commit hooks установлены успешно!")
+        print("Теперь hooks будут автоматически запускаться при коммитах")
         return 0
     
     # Запускаем все hooks
     if "--run-all" in args or not args:
-        print("\n🔍 Запуск проверок на всех файлах...")
+        print("\nЗапуск проверок на всех файлах...")
         if not run_all_hooks():
-            print("\n❌ Некоторые проверки не прошли")
-            print("💡 Исправьте ошибки и попробуйте снова")
+            print("\nНекоторые проверки не прошли")
+            print("Исправьте ошибки и попробуйте снова")
             return 1
         else:
-            print("\n✅ Все проверки прошли успешно!")
+            print("\nВсе проверки прошли успешно!")
     
-    print("\n🎉 Настройка pre-commit hooks завершена!")
-    print("\n📋 Полезные команды:")
+    print("\nНастройка pre-commit hooks завершена!")
+    print("\nПолезные команды:")
     print("   pre-commit run --all-files    # Запустить все hooks")
     print("   pre-commit run <hook-name>    # Запустить конкретный hook")
     print("   pre-commit autoupdate         # Обновить hooks")
