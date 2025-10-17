@@ -38,6 +38,10 @@ from sklearn.metrics import (
 warnings.filterwarnings("ignore")
 
 # Настройка логирования
+# Создаем папку logs, если её нет
+import os
+os.makedirs("logs", exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
