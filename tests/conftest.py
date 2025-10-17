@@ -15,6 +15,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from config.settings.config import Settings
+
 
 @pytest.fixture
 def sample_credit_data():
@@ -348,3 +350,13 @@ def sample_model_params():
         "penalty": "l2",
         "solver": "liblinear",
     }
+
+
+@pytest.fixture
+def test_settings():
+    """Создает тестовые настройки для приложения."""
+    return Settings(
+        database_url="sqlite:///test.db",
+        secret_key="test-secret-key",
+        jwt_secret_key="test-jwt-secret-key"
+    )

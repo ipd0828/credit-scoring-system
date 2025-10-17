@@ -102,6 +102,7 @@ class TestPipelineIntegration:
             # Создаем директорию, если её нет (для CI/CD)
             if not dir_path.exists():
                 dir_path.mkdir(parents=True, exist_ok=True)
+            # Проверяем после создания
             assert dir_path.exists(), f"Директория {dir_name} не найдена"
             assert dir_path.is_dir(), f"{dir_name} не является директорией"
 
