@@ -80,6 +80,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Create logs directory
+      run: mkdir -p logs
+    
     - name: Run unit tests
       run: |
         pytest tests/unit/ -v --cov=scripts --cov-report=xml --cov-report=html
