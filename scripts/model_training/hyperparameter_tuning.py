@@ -23,9 +23,8 @@ from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_sc
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_auc_score, roc_curve,
     precision_score, recall_score, f1_score, accuracy_score
@@ -97,50 +96,33 @@ def create_preprocessor(X_train: pd.DataFrame) -> ColumnTransformer:
 
 def define_parameter_grids() -> List[Dict[str, Any]]:
     """
-    Определяет сетки параметров для различных моделей.
+    Определяет упрощенные сетки параметров для логистической регрессии и случайного леса.
     
     Returns:
         List[Dict]: Список словарей с параметрами для GridSearchCV
     """
-    print("\nОпределение сеток параметров...")
+    print("\nОпределение упрощенных сеток параметров...")
     
     param_grids = [
-        # Logistic Regression
+        # Logistic Regression - упрощенная сетка
         {
             'classifier': [LogisticRegression(max_iter=1000, random_state=42)],
-            'classifier__C': [0.01, 0.1, 1, 10, 100],
-            'classifier__penalty': ['l1', 'l2'],
-            'classifier__solver': ['liblinear', 'saga']
+            'classifier__C': [0.1, 1, 10],  # Уменьшено с 5 до 3 значений
+            'classifier__penalty': ['l2'],  # Только L2 регуляризация
+            'classifier__solver': ['liblinear']  # Только liblinear
         },
         
-        # Random Forest
+        # Random Forest - упрощенная сетка
         {
             'classifier': [RandomForestClassifier(random_state=42)],
-            'classifier__n_estimators': [50, 100, 200],
-            'classifier__max_depth': [5, 10, 15, None],
-            'classifier__min_samples_split': [2, 5, 10],
-            'classifier__min_samples_leaf': [1, 2, 4]
-        },
-        
-        # Gradient Boosting
-        {
-            'classifier': [GradientBoostingClassifier(random_state=42)],
-            'classifier__n_estimators': [50, 100, 200],
-            'classifier__learning_rate': [0.01, 0.1, 0.2],
-            'classifier__max_depth': [3, 5, 7],
-            'classifier__subsample': [0.8, 0.9, 1.0]
-        },
-        
-        # SVM (только для небольших датасетов)
-        {
-            'classifier': [SVC(probability=True, random_state=42)],
-            'classifier__C': [0.1, 1, 10],
-            'classifier__kernel': ['rbf', 'linear'],
-            'classifier__gamma': ['scale', 'auto']
+            'classifier__n_estimators': [50, 100],  # Уменьшено с 3 до 2 значений
+            'classifier__max_depth': [10, 15],  # Уменьшено с 4 до 2 значений
+            'classifier__min_samples_split': [2, 5],  # Уменьшено с 3 до 2 значений
+            'classifier__min_samples_leaf': [1, 2]  # Уменьшено с 3 до 2 значений
         }
     ]
     
-    print(f"Создано {len(param_grids)} сеток параметров:")
+    print(f"Создано {len(param_grids)} упрощенных сеток параметров:")
     for i, grid in enumerate(param_grids):
         classifier_name = grid['classifier'][0].__class__.__name__
         print(f"  {i+1}. {classifier_name}")
@@ -151,7 +133,7 @@ def define_parameter_grids() -> List[Dict[str, Any]]:
 def perform_grid_search(X_train: pd.DataFrame, y_train: pd.Series, 
                        preprocessor: ColumnTransformer, 
                        param_grids: List[Dict[str, Any]], 
-                       cv: int = 3, n_jobs: int = -1) -> Dict[str, Any]:
+                       cv: int = 2, n_jobs: int = -1) -> Dict[str, Any]:
     """
     Выполняет поиск по сетке параметров.
     

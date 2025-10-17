@@ -24,7 +24,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
+# from sklearn.svm import SVC  # Удалено для упрощения
 from sklearn.metrics import (
     classification_report, confusion_matrix, roc_auc_score, roc_curve,
     precision_score, recall_score, f1_score, accuracy_score
@@ -35,7 +35,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Импорт MLflow
-from mlflow_tracking import setup_mlflow_experiment, log_model_experiment
+from .simple_mlflow_tracking import setup_mlflow_experiment
 
 warnings.filterwarnings("ignore")
 
@@ -72,9 +72,12 @@ def load_processed_data(data_dir: str = "data/processed") -> Tuple[pd.DataFrame,
     return X_train, X_test, y_train, y_test, preprocessor
 
 
-def create_models() -> Dict[str, Pipeline]:
+def create_models(X_train) -> Dict[str, Pipeline]:
     """
     Создает словарь моделей для обучения.
+    
+    Args:
+        X_train: Обучающие данные для определения типов признаков
     
     Returns:
         Dict[str, Pipeline]: Словарь с моделями
@@ -101,11 +104,7 @@ def create_models() -> Dict[str, Pipeline]:
         ]),
         "Random Forest": Pipeline([
             ('preprocessor', preprocessor),
-            ('classifier', RandomForestClassifier(random_state=42))
-        ]),
-        "SVM": Pipeline([
-            ('preprocessor', preprocessor),
-            ('classifier', SVC(probability=True, random_state=42))
+            ('classifier', RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42))
         ])
     }
     
@@ -381,7 +380,7 @@ def main():
     X_train, X_test, y_train, y_test, preprocessor = load_processed_data()
     
     # Создаем модели
-    models = create_models()
+    models = create_models(X_train)
     
     # Обучаем и оцениваем модели
     training_results = train_and_evaluate_models(models, X_train, X_test, y_train, y_test)

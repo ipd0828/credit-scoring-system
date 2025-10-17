@@ -1,6 +1,6 @@
 # Makefile для проекта кредитного скоринга
 
-.PHONY: help install test test-unit test-integration test-e2e test-all lint format clean setup pre-commit pipeline docker-build docker-run
+.PHONY: help install test test-unit test-integration test-e2e test-all lint format clean setup pre-commit pipeline docker-build docker-run start-api start-frontend start-all
 
 # Переменные
 PYTHON = python
@@ -282,6 +282,21 @@ clean-reports: ## Очистить отчеты
 	rm -f coverage.xml
 	rm -f bandit-report.json
 	rm -f pipeline.prof
+
+# Команды для запуска сервисов
+start-api: ## Запустить API сервер
+	@echo "$(GREEN)Запуск API сервера...$(NC)"
+	uvicorn api.simple_main:app --host 0.0.0.0 --port 8000 --reload
+
+start-frontend: ## Запустить frontend
+	@echo "$(GREEN)Запуск frontend...$(NC)"
+	streamlit run frontend/app.py --server.port 8501
+
+start-all: ## Запустить все сервисы
+	@echo "$(GREEN)Запуск всех сервисов...$(NC)"
+	@echo "API: http://localhost:8000"
+	@echo "Frontend: http://localhost:8501"
+	@echo "API Docs: http://localhost:8000/docs"
 
 # Команды для помощи
 help-install: ## Помощь по установке

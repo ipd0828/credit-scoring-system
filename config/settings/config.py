@@ -2,7 +2,8 @@
 
 import os
 from typing import Optional
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -50,10 +51,10 @@ class Settings(BaseSettings):
     enable_automatic_retraining: bool = Field(default=False, env="ENABLE_AUTOMATIC_RETRAINING")
     enable_a_b_testing: bool = Field(default=False, env="ENABLE_A_B_TESTING")
     
-    class Config:
-        """Конфигурация Pydantic."""
-        env_file = ".env"
-        case_sensitive = False
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": False
+    }
 
 
 # Глобальный экземпляр настроек

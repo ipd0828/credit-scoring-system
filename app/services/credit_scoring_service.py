@@ -9,7 +9,8 @@ import structlog
 
 from app.schemas.credit_scoring import (
     CreditScoringRequest,
-    ModelPrediction
+    ModelPrediction,
+    CreditScoringFeedback
 )
 from config.settings import get_settings
 

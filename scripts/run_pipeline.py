@@ -115,7 +115,7 @@ def create_directories() -> None:
     for directory in directories:
         dir_path = project_root / directory
         dir_path.mkdir(parents=True, exist_ok=True)
-        print(f"📁 Создана директория: {directory}")
+        print(f"Создана директория: {directory}")
 
 
 def main():
@@ -136,7 +136,7 @@ def main():
     
     args = parser.parse_args()
     
-    print("🚀 ЗАПУСК ПАЙПЛАЙНА КРЕДИТНОГО СКОРИНГА")
+    print("ЗАПУСК ПАЙПЛАЙНА КРЕДИТНОГО СКОРИНГА")
     print("="*60)
     
     # Проверяем наличие данных
@@ -175,7 +175,7 @@ def main():
     
     for step in steps:
         if step not in scripts:
-            print(f"⚠️  Неизвестный шаг: {step}")
+            print(f"Неизвестный шаг: {step}")
             continue
         
         script_path = scripts[step]

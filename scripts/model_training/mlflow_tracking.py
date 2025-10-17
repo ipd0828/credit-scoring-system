@@ -9,15 +9,22 @@
 """
 
 import os
-import mlflow
-import mlflow.sklearn
-import mlflow.pytorch
 import pandas as pd
 import numpy as np
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 import joblib
 from datetime import datetime
+
+# Проверяем доступность MLflow
+try:
+    import mlflow
+    import mlflow.sklearn
+    import mlflow.pytorch
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    print("Предупреждение: MLflow не установлен. Отслеживание экспериментов будет отключено.")
+    MLFLOW_AVAILABLE = False
 import json
 
 
@@ -42,18 +49,35 @@ class MLflowTracker:
         self.tracking_uri = tracking_uri or "sqlite:///mlflow.db"
         self.registry_uri = registry_uri
         
-        # Настройка MLflow
-        mlflow.set_tracking_uri(self.tracking_uri)
-        if self.registry_uri:
-            mlflow.set_registry_uri(self.registry_uri)
+        if not MLFLOW_AVAILABLE:
+            print("MLflow недоступен. Отслеживание экспериментов отключено.")
+            self.experiment_id = "0"
+            return
         
-        # Создание или получение эксперимента
         try:
-            self.experiment_id = mlflow.create_experiment(experiment_name)
-        except mlflow.exceptions.MlflowException:
-            self.experiment_id = mlflow.get_experiment_by_name(experiment_name).experiment_id
-        
-        mlflow.set_experiment(experiment_name)
+            # Настройка MLflow
+            mlflow.set_tracking_uri(self.tracking_uri)
+            if self.registry_uri:
+                mlflow.set_registry_uri(self.registry_uri)
+            
+            # Создание или получение эксперимента
+            try:
+                # Пытаемся получить существующий эксперимент
+                experiment = mlflow.get_experiment_by_name(experiment_name)
+                if experiment is None:
+                    # Если эксперимент не существует, создаем его
+                    self.experiment_id = mlflow.create_experiment(experiment_name)
+                else:
+                    self.experiment_id = experiment.experiment_id
+            except Exception as e:
+                # Если есть проблемы с MLflow, используем дефолтный эксперимент
+                print(f"Предупреждение: Не удалось настроить эксперимент MLflow: {e}")
+                self.experiment_id = "0"  # Дефолтный эксперимент
+            
+            mlflow.set_experiment(experiment_name)
+        except Exception as e:
+            print(f"Ошибка инициализации MLflow: {e}")
+            self.experiment_id = "0"
     
     def start_run(self, run_name: Optional[str] = None, tags: Optional[Dict[str, str]] = None) -> mlflow.ActiveRun:
         """

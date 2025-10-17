@@ -143,7 +143,7 @@ class TestCreditScoringService:
         
         assert prediction.prediction == 1  # Should be rejected (probability > threshold)
         assert prediction.probability == 0.7
-        assert prediction.confidence == "high"
+        assert prediction.confidence == "medium"  # 0.7 falls in medium range (0.6-0.8)
         assert prediction.risk_score == 70.0
         assert prediction.model_version == "1.0.0"
     

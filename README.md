@@ -145,15 +145,34 @@ scripts\deployment\docker_run.bat     # Windows
 
 ### 5. Запуск приложения
 
+#### Вариант A: Через Makefile (рекомендуется)
+
 ```bash
 # Запуск API
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+make start-api
+
+# Запуск frontend
+make start-frontend
+
+# Запуск всех сервисов
+make start-all
+```
+
+#### Вариант B: Прямой запуск
+
+```bash
+# Запуск API (упрощенная версия)
+uvicorn api.simple_main:app --reload --host 0.0.0.0 --port 8000
 
 # Запуск frontend
 streamlit run frontend/app.py --server.port 8501
+```
 
-# Запуск MLflow UI (для просмотра экспериментов)
-mlflow ui --host 0.0.0.0 --port 5000
+#### Вариант C: Docker Compose
+
+```bash
+# Запуск всех сервисов через Docker
+docker-compose up -d
 ```
 
 ### 6. Мониторинг
@@ -176,10 +195,17 @@ python scripts/monitoring/data_quality_monitor.py
 - **Автоматическое переобучение** - Обновление моделей на новых данных
 
 ### API Endpoints:
-- `POST /api/v1/predict` - Предсказание кредитного скоринга
+- `GET /` - Главная страница API
+- `GET /docs` - Интерактивная документация Swagger
 - `GET /api/v1/health` - Проверка здоровья системы
-- `GET /api/v1/metrics` - Метрики производительности
-- `POST /api/v1/feedback` - Обратная связь для улучшения модели
+- `POST /api/v1/predict` - Предсказание кредитного скоринга
+- `GET /api/v1/model/info` - Информация о модели
+- `GET /api/v1/predictions/stats` - Статистика предсказаний
+
+### Доступ к приложению:
+- **API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Frontend**: http://localhost:8501
 
 ## CI/CD и Автоматизация
 

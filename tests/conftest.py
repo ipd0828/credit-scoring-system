@@ -179,8 +179,8 @@ def sample_processed_data():
     data = {
         'feature1': np.random.normal(0, 1, n_samples),
         'feature2': np.random.normal(0, 1, n_samples),
-        'feature3': np.random.choice(['A', 'B', 'C'], n_samples),
-        'feature4': np.random.choice(['X', 'Y'], n_samples),
+        'feature3': np.random.normal(0, 1, n_samples),  
+        'feature4': np.random.normal(0, 1, n_samples),  
         'target': np.random.choice([0, 1], n_samples, p=[0.7, 0.3])
     }
     

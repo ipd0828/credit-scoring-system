@@ -70,6 +70,15 @@ def analyze_representativeness(df: pd.DataFrame, df_sample: pd.DataFrame) -> Dic
     print("АНАЛИЗ РЕПРЕЗЕНТАТИВНОСТИ ВЫБОРКИ")
     print("="*60)
     
+    # Проверяем на пустые DataFrame
+    if df.empty or df_sample.empty:
+        return {
+            'Оценка': 'Не применимо',
+            'Причина': 'Пустой DataFrame',
+            'Числовые признаки': [],
+            'Категориальные признаки': []
+        }
+    
     # Определяем типы столбцов
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()

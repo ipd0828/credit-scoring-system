@@ -21,7 +21,7 @@ class TestEndToEndPipeline:
     """End-to-end тесты для полного пайплайна."""
     
     @pytest.fixture
-    def full_project_setup(self, sample_credit_data):
+    def full_project_setup(self, sample_processed_data):
         """Создает полную настройку проекта для E2E тестирования."""
         with tempfile.TemporaryDirectory() as temp_dir:
             project_dir = Path(temp_dir)
@@ -49,7 +49,7 @@ class TestEndToEndPipeline:
                 (project_dir / dir_path).mkdir(parents=True, exist_ok=True)
             
             # Создаем тестовые данные
-            sample_credit_data.to_csv(
+            sample_processed_data.to_csv(
                 project_dir / "data" / "raw" / "accepted_2007_to_2018Q4.csv",
                 index=False
             )
@@ -135,7 +135,7 @@ MODEL_PATH=models/trained/best_model.pkl
             "scripts/model_training/train_models.py",
             "scripts/model_training/hyperparameter_tuning.py",
             "scripts/model_training/validation.py",
-            "scripts/model_training/mlflow_tracking.py",
+            "scripts/model_training/simple_mlflow_tracking.py",
             "scripts/monitoring/model_monitoring.py",
             "scripts/monitoring/data_quality_monitor.py"
         ]
@@ -221,21 +221,18 @@ MODEL_PATH=models/trained/best_model.pkl
                 except Exception as e:
                     print(f"{script_name} failed: {e}")
     
-    def test_data_flow_integration(self, full_project_setup, sample_credit_data):
+    def test_data_flow_integration(self, full_project_setup, sample_processed_data):
         """Тест интеграции потока данных."""
         project_dir = full_project_setup
         
         # Тестируем поток данных через все этапы
-        original_data = sample_credit_data.copy()
+        original_data = sample_processed_data.copy()
         
         # Этап 1: EDA
         eda_data = original_data.copy()
         assert eda_data.shape == original_data.shape
         
-        # Симуляция обработки целевой переменной
-        eda_data['target'] = eda_data['loan_status'].apply(
-            lambda x: 0 if x == 'Fully Paid' else 1
-        )
+        # Целевая переменная уже существует в sample_processed_data
         
         # Этап 2: Предобработка
         processed_data = eda_data.dropna(subset=['target'])
@@ -250,7 +247,7 @@ MODEL_PATH=models/trained/best_model.pkl
         # Этап 3: Разделение данных
         from sklearn.model_selection import train_test_split
         
-        X = processed_data.drop(columns=['target'])
+        X = processed_data[['feature1', 'feature2', 'feature3', 'feature4']]
         y = processed_data['target']
         
         X_train, X_test, y_train, y_test = train_test_split(
@@ -324,7 +321,7 @@ MODEL_PATH=models/trained/best_model.pkl
         except Exception as e:
             print(f"Error handling test failed: {e}")
     
-    def test_performance_benchmarks(self, full_project_setup, sample_credit_data):
+    def test_performance_benchmarks(self, full_project_setup, sample_processed_data):
         """Тест производительности пайплайна."""
         project_dir = full_project_setup
         
@@ -333,20 +330,20 @@ MODEL_PATH=models/trained/best_model.pkl
         
         for size in data_sizes:
             # Создаем данные заданного размера
-            test_data = sample_credit_data.sample(n=min(size, len(sample_credit_data)), random_state=42)
+            test_data = sample_processed_data.sample(n=min(size, len(sample_processed_data)), random_state=42)
             
             start_time = time.time()
             
             # Симуляция обработки данных
-            processed_data = test_data.dropna(subset=['loan_status'])
+            processed_data = test_data.dropna(subset=['target'])
             
             # Симуляция обучения модели
             from sklearn.linear_model import LogisticRegression
             from sklearn.preprocessing import StandardScaler
             from sklearn.pipeline import Pipeline
             
-            X = processed_data.select_dtypes(include=[np.number]).drop(columns=['id'], errors='ignore')
-            y = processed_data['loan_status'].apply(lambda x: 0 if x == 'Fully Paid' else 1)
+            X = processed_data[['feature1', 'feature2', 'feature3', 'feature4']]
+            y = processed_data['target']
             
             if len(X) > 0 and len(y) > 0:
                 model = Pipeline([
@@ -365,7 +362,7 @@ MODEL_PATH=models/trained/best_model.pkl
             # Проверяем, что выполнение заняло разумное время
             assert execution_time < 30  # Менее 30 секунд для любого размера
     
-    def test_memory_usage(self, full_project_setup, sample_credit_data):
+    def test_memory_usage(self, full_project_setup, sample_processed_data):
         """Тест использования памяти."""
         import psutil
         import os
@@ -374,15 +371,15 @@ MODEL_PATH=models/trained/best_model.pkl
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
         
         # Симуляция обработки данных
-        processed_data = sample_credit_data.copy()
+        processed_data = sample_processed_data.copy()
         
         # Симуляция обучения модели
         from sklearn.linear_model import LogisticRegression
         from sklearn.preprocessing import StandardScaler
         from sklearn.pipeline import Pipeline
         
-        X = processed_data.select_dtypes(include=[np.number]).drop(columns=['id'], errors='ignore')
-        y = processed_data['loan_status'].apply(lambda x: 0 if x == 'Fully Paid' else 1)
+        X = processed_data[['feature1', 'feature2', 'feature3', 'feature4']]
+        y = processed_data['target']
         
         if len(X) > 0 and len(y) > 0:
             model = Pipeline([

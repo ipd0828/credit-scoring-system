@@ -245,7 +245,7 @@ class EDAProcessor:
         pipeline_script = project_dir / "run_pipeline.py"
         
         # Копируем содержимое скрипта (упрощенная версия)
-        with open(Path(__file__).parent.parent.parent / "scripts" / "run_pipeline.py", "r") as f:
+        with open(Path(__file__).parent.parent.parent / "scripts" / "run_pipeline.py", "r", encoding="utf-8") as f:
             script_content = f.read()
         
         with open(pipeline_script, "w") as f:
