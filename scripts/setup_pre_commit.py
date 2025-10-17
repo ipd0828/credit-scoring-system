@@ -9,9 +9,9 @@
 4. Запускает проверки
 """
 
+import os
 import subprocess
 import sys
-import os
 from pathlib import Path
 
 
@@ -20,11 +20,7 @@ def run_command(command, description):
     print(f"{description}...")
     try:
         result = subprocess.run(
-            command, 
-            shell=True, 
-            check=True, 
-            capture_output=True, 
-            text=True
+            command, shell=True, check=True, capture_output=True, text=True
         )
         print(f"{description} - успешно")
         if result.stdout:
@@ -46,31 +42,26 @@ def check_python_version():
     if sys.version_info < (3, 8):
         print("Требуется Python 3.8 или выше")
         return False
-    print(f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}")
+    print(
+        f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
     return True
 
 
 def install_pre_commit():
     """Устанавливает pre-commit."""
-    return run_command(
-        "pip install pre-commit",
-        "Установка pre-commit"
-    )
+    return run_command("pip install pre-commit", "Установка pre-commit")
 
 
 def install_hooks():
     """Устанавливает pre-commit hooks."""
-    return run_command(
-        "pre-commit install",
-        "Установка pre-commit hooks"
-    )
+    return run_command("pre-commit install", "Установка pre-commit hooks")
 
 
 def install_hooks_ci():
     """Устанавливает pre-commit hooks для CI."""
     return run_command(
-        "pre-commit install --hook-type pre-push",
-        "Установка pre-commit hooks для CI"
+        "pre-commit install --hook-type pre-push", "Установка pre-commit hooks для CI"
     )
 
 
@@ -79,7 +70,7 @@ def create_secrets_baseline():
     if not Path(".secrets.baseline").exists():
         return run_command(
             "detect-secrets scan --baseline .secrets.baseline",
-            "Создание baseline для detect-secrets"
+            "Создание baseline для detect-secrets",
         )
     else:
         print("Baseline для detect-secrets уже существует")
@@ -88,23 +79,18 @@ def create_secrets_baseline():
 
 def run_all_hooks():
     """Запускает все hooks на всех файлах."""
-    return run_command(
-        "pre-commit run --all-files",
-        "Запуск всех hooks на всех файлах"
-    )
+    return run_command("pre-commit run --all-files", "Запуск всех hooks на всех файлах")
 
 
 def update_hooks():
     """Обновляет hooks до последних версий."""
-    return run_command(
-        "pre-commit autoupdate",
-        "Обновление hooks до последних версий"
-    )
+    return run_command("pre-commit autoupdate", "Обновление hooks до последних версий")
 
 
 def show_help():
     """Показывает справку по использованию."""
-    print("""
+    print(
+        """
 Настройка Pre-commit Hooks для проекта кредитного скоринга
 
 Использование:
@@ -131,56 +117,57 @@ def show_help():
     • markdownlint - проверка Markdown файлов
     • detect-secrets - поиск секретов в коде
     • hadolint - проверка Dockerfile
-    """)
+    """
+    )
 
 
 def main():
     """Основная функция."""
     args = sys.argv[1:]
-    
+
     if "--help" in args or "-h" in args:
         show_help()
         return 0
-    
+
     print("Настройка Pre-commit Hooks для проекта кредитного скоринга")
     print("=" * 60)
-    
+
     # Проверяем версию Python
     if not check_python_version():
         return 1
-    
+
     # Устанавливаем pre-commit
     if not install_pre_commit():
         print("Не удалось установить pre-commit")
         return 1
-    
+
     # Обновляем hooks если нужно
     if "--update" in args:
         if not update_hooks():
             print("Не удалось обновить hooks")
             return 1
-    
+
     # Устанавливаем hooks
     if not install_hooks():
         print("Не удалось установить pre-commit hooks")
         return 1
-    
+
     # Устанавливаем hooks для CI
     if not install_hooks_ci():
         print("Не удалось установить pre-commit hooks для CI")
         return 1
-    
+
     # Создаем baseline для detect-secrets
     if not create_secrets_baseline():
         print("Не удалось создать baseline для detect-secrets")
         return 1
-    
+
     # Если только установка, не запускаем проверки
     if "--install-only" in args:
         print("\nPre-commit hooks установлены успешно!")
         print("Теперь hooks будут автоматически запускаться при коммитах")
         return 0
-    
+
     # Запускаем все hooks
     if "--run-all" in args or not args:
         print("\nЗапуск проверок на всех файлах...")
@@ -190,14 +177,14 @@ def main():
             return 1
         else:
             print("\nВсе проверки прошли успешно!")
-    
+
     print("\nНастройка pre-commit hooks завершена!")
     print("\nПолезные команды:")
     print("   pre-commit run --all-files    # Запустить все hooks")
     print("   pre-commit run <hook-name>    # Запустить конкретный hook")
     print("   pre-commit autoupdate         # Обновить hooks")
     print("   pre-commit uninstall          # Удалить hooks")
-    
+
     return 0
 
 

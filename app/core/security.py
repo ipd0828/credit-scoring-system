@@ -22,12 +22,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 class Token(BaseModel):
     """Модель ответа токена."""
+
     access_token: str
     token_type: str
 
 
 class TokenData(BaseModel):
     """Модель данных токена."""
+
     username: Optional[str] = None
 
 
@@ -48,7 +50,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

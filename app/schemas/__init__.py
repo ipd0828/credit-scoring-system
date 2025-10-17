@@ -1,15 +1,15 @@
 """Pydantic schemas for the credit scoring application."""
 
 from .credit_scoring import (
+    CreditScoringFeedback,
     CreditScoringRequest,
     CreditScoringResponse,
-    CreditScoringFeedback,
     ModelPrediction,
 )
 
 __all__ = [
     "CreditScoringRequest",
-    "CreditScoringResponse", 
+    "CreditScoringResponse",
     "CreditScoringFeedback",
     "ModelPrediction",
 ]

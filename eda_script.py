@@ -1,27 +1,32 @@
 import os
-import pandas as pd
-import numpy as np
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
-from scipy.stats import zscore
-from scipy.stats import f_oneway
-from scipy.stats import chi2_contingency
-from scipy.stats import kurtosis, skew, norm
-from scipy.stats import gaussian_kde
-from statsmodels.tsa.seasonal import STL
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
-from statsmodels.tsa.stattools import adfuller
-from statsmodels.tsa.stattools import acf, pacf
-from phik.report import plot_correlation_matrix
 from phik import phik_matrix
 from phik.binning import bin_data
+from phik.report import plot_correlation_matrix
+from scipy.stats import (
+    chi2_contingency,
+    f_oneway,
+    gaussian_kde,
+    kurtosis,
+    norm,
+    skew,
+    zscore,
+)
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.seasonal import STL
+from statsmodels.tsa.stattools import acf, adfuller, pacf
 
-import time
 
 def timing(func):
     """
     Декоратор для измерения времени выполнения функций.
     """
+
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
@@ -29,7 +34,9 @@ def timing(func):
         elapsed_time = end_time - start_time
         print(f"Функция '{func.__name__}' выполнена за {elapsed_time:.2f} секунд.")
         return result
+
     return wrapper
+
 
 class EDAProcessor:
     def __init__(self, df, output_dir="DATA_OUT/graphics"):
@@ -57,39 +64,51 @@ class EDAProcessor:
             - 'duplicates': DataFrame с дублированными строками (если они есть).
             - 'duplicate_columns': Список дублированных столбцов (если такие есть).
         """
-        summary = pd.DataFrame({
-            'Название столбца': self.df.columns,
-            'Пропущено строк': self.df.isnull().sum(),
-            'Процент пропусков, %': (self.df.isnull().sum() / len(self.df) * 100).round(2),
-            'Тип данных': self.df.dtypes,
-            'Количество уникальных значений': [self.df[col].nunique() for col in self.df.columns],
-            'Уникальные (категориальные) значения': [
-                self.df[col].dropna().unique().tolist() if self.df[col].dtype in ['object', 'category', 'string'] else None
-                for col in self.df.columns
-            ],
-            'Рекомендации': [
-                "Удалить (константный столбец)" if self.df[col].nunique() == 1 else
-                "Удалить (ID или уникальные значения)" if self.df[col].nunique() == len(self.df) else
-                "Оставить"
-                for col in self.df.columns
-            ]
-        }).reset_index(drop=True)
+        summary = pd.DataFrame(
+            {
+                "Название столбца": self.df.columns,
+                "Пропущено строк": self.df.isnull().sum(),
+                "Процент пропусков, %": (
+                    self.df.isnull().sum() / len(self.df) * 100
+                ).round(2),
+                "Тип данных": self.df.dtypes,
+                "Количество уникальных значений": [
+                    self.df[col].nunique() for col in self.df.columns
+                ],
+                "Уникальные (категориальные) значения": [
+                    self.df[col].dropna().unique().tolist()
+                    if self.df[col].dtype in ["object", "category", "string"]
+                    else None
+                    for col in self.df.columns
+                ],
+                "Рекомендации": [
+                    "Удалить (константный столбец)"
+                    if self.df[col].nunique() == 1
+                    else "Удалить (ID или уникальные значения)"
+                    if self.df[col].nunique() == len(self.df)
+                    else "Оставить"
+                    for col in self.df.columns
+                ],
+            }
+        ).reset_index(drop=True)
 
         duplicate_count = self.df.duplicated().sum()
-        duplicates = self.df[self.df.duplicated()] if duplicate_count > 0 else pd.DataFrame()
+        duplicates = (
+            self.df[self.df.duplicated()] if duplicate_count > 0 else pd.DataFrame()
+        )
 
         # Поиск дублированных столбцов
         duplicate_columns = []
         for i, col1 in enumerate(self.df.columns):
-            for col2 in self.df.columns[i + 1:]:
+            for col2 in self.df.columns[i + 1 :]:
                 if self.df[col1].equals(self.df[col2]):
                     duplicate_columns.append((col1, col2))
 
         return {
-            'summary': summary,
-            'duplicate_count': duplicate_count,
-            'duplicates': duplicates,
-            'duplicate_columns': duplicate_columns
+            "summary": summary,
+            "duplicate_count": duplicate_count,
+            "duplicates": duplicates,
+            "duplicate_columns": duplicate_columns,
         }
 
     @timing
@@ -101,23 +120,31 @@ class EDAProcessor:
         target_column (str): Название колонки с целевой переменной.
         """
         target_counts = self.df[target_column].value_counts()
-        ax = sns.barplot(x=target_counts.index, y=target_counts.values, palette="viridis")
+        ax = sns.barplot(
+            x=target_counts.index, y=target_counts.values, palette="viridis"
+        )
         plt.title("Распределение целевой переменной")
         plt.xlabel("Значение целевой переменной")
         plt.ylabel("Количество")
         for p in ax.patches:
             height = p.get_height()
-            ax.annotate(f'{int(height)}', (p.get_x() + p.get_width() / 2., height), ha='center', va='bottom')
-        file_path = os.path.join(self.output_dir, f"target_distribution_{target_column}.jpg")
-        plt.savefig(file_path, bbox_inches='tight')
+            ax.annotate(
+                f"{int(height)}",
+                (p.get_x() + p.get_width() / 2.0, height),
+                ha="center",
+                va="bottom",
+            )
+        file_path = os.path.join(
+            self.output_dir, f"target_distribution_{target_column}.jpg"
+        )
+        plt.savefig(file_path, bbox_inches="tight")
         plt.show()
         plt.close()
 
         # Создание сводной таблицы
-        target_summary = pd.DataFrame({
-            'Значение': target_counts.index,
-            'Количество': target_counts.values
-        })
+        target_summary = pd.DataFrame(
+            {"Значение": target_counts.index, "Количество": target_counts.values}
+        )
         return target_summary
 
     @timing
@@ -136,14 +163,22 @@ class EDAProcessor:
 
             # Если после удаления пропусков данных нет, пропускаем
             if non_na_data.empty:
-                print(f"Пропущен график для столбца {column}, так как он пустой после удаления пропусков.")
+                print(
+                    f"Пропущен график для столбца {column}, так как он пустой после удаления пропусков."
+                )
                 continue
 
             # Проверяем формат данных: даты
             try:
-                parsed_dates = pd.to_datetime(non_na_data, format='%d.%m.%Y', errors='coerce')
-                if parsed_dates.notna().mean() > 0.8:  # Если более 80% значений интерпретируются как даты
-                    print(f"Пропущен график для столбца {column}, так как он содержит данные формата даты.")
+                parsed_dates = pd.to_datetime(
+                    non_na_data, format="%d.%m.%Y", errors="coerce"
+                )
+                if (
+                    parsed_dates.notna().mean() > 0.8
+                ):  # Если более 80% значений интерпретируются как даты
+                    print(
+                        f"Пропущен график для столбца {column}, так как он содержит данные формата даты."
+                    )
                     continue
             except Exception as e:
                 print(f"Ошибка при проверке формата даты для столбца {column}: {e}")
@@ -151,7 +186,9 @@ class EDAProcessor:
 
             # Проверяем тип данных: исключаем числовые столбцы
             if pd.api.types.is_numeric_dtype(non_na_data):
-                print(f"Пропущен график для столбца {column}, так как он содержит числовые данные.")
+                print(
+                    f"Пропущен график для столбца {column}, так как он содержит числовые данные."
+                )
                 continue
 
             # Количество уникальных значений
@@ -159,7 +196,9 @@ class EDAProcessor:
 
             # Автоматический подбор размеров графика
             width = min(max(8, unique_count * 0.5), 20)  # Масштабируем ширину графика
-            rotation = 0 if unique_count <= 5 else 30 if unique_count <= 10 else 60  # Автоматический угол поворота подписей
+            rotation = (
+                0 if unique_count <= 5 else 30 if unique_count <= 10 else 60
+            )  # Автоматический угол поворота подписей
             height = 6  # Фиксированная высота
 
             # Строим график
@@ -173,24 +212,33 @@ class EDAProcessor:
             # Аннотации
             for p in ax.patches:
                 height = p.get_height()
-                ax.annotate(f'{int(height)}', (p.get_x() + p.get_width() / 2., height), ha='center', va='bottom')
+                ax.annotate(
+                    f"{int(height)}",
+                    (p.get_x() + p.get_width() / 2.0, height),
+                    ha="center",
+                    va="bottom",
+                )
 
             # Сохранение графика
-            file_path = os.path.join(self.output_dir, f"categorical_distribution_{column}.jpg")
-            plt.savefig(file_path, bbox_inches='tight')
+            file_path = os.path.join(
+                self.output_dir, f"categorical_distribution_{column}.jpg"
+            )
+            plt.savefig(file_path, bbox_inches="tight")
             plt.show()
             plt.close()
 
             # Добавляем данные в сводную таблицу
             column_summary = non_na_data.value_counts().reset_index()
-            column_summary.columns = ['Элемент', 'Количество']
-            column_summary.insert(0, 'Признак', column)
+            column_summary.columns = ["Элемент", "Количество"]
+            column_summary.insert(0, "Признак", column)
             category_summary.append(column_summary)
 
         # Объединяем все данные в одну таблицу
         if category_summary:
             formatted_summary = pd.concat(category_summary, ignore_index=True)
-            formatted_summary['Признак'] = formatted_summary['Признак'].where(~formatted_summary['Признак'].duplicated(keep='first'), '')
+            formatted_summary["Признак"] = formatted_summary["Признак"].where(
+                ~formatted_summary["Признак"].duplicated(keep="first"), ""
+            )
             return formatted_summary
         else:
             print("Нет подходящих категориальных переменных для анализа.")
@@ -216,14 +264,20 @@ class EDAProcessor:
             non_na_data = self.df[[column, target_column]].dropna()
 
             if non_na_data.empty:
-                print(f"Пропущен график для столбца {column}, так как он пустой после удаления пропусков.")
+                print(
+                    f"Пропущен график для столбца {column}, так как он пустой после удаления пропусков."
+                )
                 continue
 
             # Проверяем формат данных: даты
             try:
-                parsed_dates = pd.to_datetime(non_na_data[column], format='%d.%m.%Y', errors='coerce')
+                parsed_dates = pd.to_datetime(
+                    non_na_data[column], format="%d.%m.%Y", errors="coerce"
+                )
                 if parsed_dates.notna().mean() > 0.8:
-                    print(f"Пропущен график для столбца {column}, так как он содержит данные формата даты.")
+                    print(
+                        f"Пропущен график для столбца {column}, так как он содержит данные формата даты."
+                    )
                     continue
             except Exception as e:
                 print(f"Ошибка при проверке формата даты для столбца {column}: {e}")
@@ -231,15 +285,19 @@ class EDAProcessor:
 
             # Проверяем тип данных: исключаем числовые столбцы
             if pd.api.types.is_numeric_dtype(non_na_data[column]):
-                print(f"Пропущен график для столбца {column}, так как он содержит числовые данные.")
+                print(
+                    f"Пропущен график для столбца {column}, так как он содержит числовые данные."
+                )
                 continue
 
             # Количество уникальных значений
             unique_count = non_na_data[column].nunique()
-            
+
             # Автоматический подбор размеров графика
             width = min(max(8, unique_count * 0.5), 20)  # Масштабируем ширину графика
-            rotation = 0 if unique_count <= 5 else 30 if unique_count <= 10 else 60  # Автоматический угол поворота подписей
+            rotation = (
+                0 if unique_count <= 5 else 30 if unique_count <= 10 else 60
+            )  # Автоматический угол поворота подписей
             height = 6  # Фиксированная высота
 
             # Строим график
@@ -247,7 +305,7 @@ class EDAProcessor:
             ax = sns.countplot(
                 x=non_na_data[column].astype(str),
                 hue=non_na_data[target_column].astype(str),
-                palette="viridis"
+                palette="viridis",
             )
             plt.title(f"Распределение {column} в зависимости от {target_column}")
             plt.xlabel(column)
@@ -258,17 +316,28 @@ class EDAProcessor:
             # Аннотации
             for p in ax.patches:
                 height = p.get_height()
-                ax.annotate(f'{int(height)}', (p.get_x() + p.get_width() / 2., height), ha='center', va='bottom')
+                ax.annotate(
+                    f"{int(height)}",
+                    (p.get_x() + p.get_width() / 2.0, height),
+                    ha="center",
+                    va="bottom",
+                )
 
             # Сохранение графика
-            file_path = os.path.join(self.output_dir, f"categorical_vs_target_{column}.jpg")
-            plt.savefig(file_path, bbox_inches='tight')
+            file_path = os.path.join(
+                self.output_dir, f"categorical_vs_target_{column}.jpg"
+            )
+            plt.savefig(file_path, bbox_inches="tight")
             plt.show()
             plt.close()
 
             # Создаем сводную таблицу распределения
-            category_distribution = non_na_data.groupby([column, target_column]).size().reset_index(name='Количество')
-            category_distribution.insert(0, 'Признак', column)
+            category_distribution = (
+                non_na_data.groupby([column, target_column])
+                .size()
+                .reset_index(name="Количество")
+            )
+            category_distribution.insert(0, "Признак", column)
             summary_data.append(category_distribution)
 
         # Объединяем все данные в один DataFrame
@@ -299,7 +368,9 @@ class EDAProcessor:
 
             # Проверяем уникальность значений
             if data.nunique() <= 1:  # Если в данных только одно уникальное значение
-                print(f"Пропущен график для столбца {column}, так как все значения одинаковы или отсутствует дисперсия.")
+                print(
+                    f"Пропущен график для столбца {column}, так как все значения одинаковы или отсутствует дисперсия."
+                )
                 continue
 
             plt.figure(figsize=(10, 6))
@@ -311,40 +382,75 @@ class EDAProcessor:
                 edgecolor="black",
                 color="royalblue",
                 alpha=0.8,
-                linewidth=1.2
+                linewidth=1.2,
             )
 
             # Изменение цвета KDE линии
             kde_color = "darkorange"
             sns.kdeplot(data, color=kde_color, linewidth=2, label="KDE (плотность)")
 
-            plt.title(f"Гистограмма и KDE для признака: {column}", fontsize=14, fontweight="bold")
+            plt.title(
+                f"Гистограмма и KDE для признака: {column}",
+                fontsize=14,
+                fontweight="bold",
+            )
             plt.xlabel(column, fontsize=12)
             plt.ylabel("Плотность / Частота", fontsize=12)
-            plt.grid(axis='y', linestyle='--', alpha=0.7)
+            plt.grid(axis="y", linestyle="--", alpha=0.7)
 
             # Аннотация медианы и среднего
             median = data.median()
             mean = data.mean()
             std_dev = data.std()
-            plt.axvline(median, color="red", linestyle="--", linewidth=2, label=f"Медиана: {median:.2f}")
-            plt.axvline(mean, color="blue", linestyle="-.", linewidth=2, label=f"Среднее: {mean:.2f}")
+            plt.axvline(
+                median,
+                color="red",
+                linestyle="--",
+                linewidth=2,
+                label=f"Медиана: {median:.2f}",
+            )
+            plt.axvline(
+                mean,
+                color="blue",
+                linestyle="-.",
+                linewidth=2,
+                label=f"Среднее: {mean:.2f}",
+            )
 
             # Добавляем перцентильные линии
             percentiles = [0.25, 0.75, 0.99]
             percentile_values = data.quantile(percentiles)
             perc_colors = ["green", "purple", "brown"]  # Цвета для перцентилей
             for perc, value, color in zip(percentiles, percentile_values, perc_colors):
-                plt.axvline(value, color=color, linestyle=":", linewidth=2, label=f"{int(perc * 100)}-й перцентиль: {value:.2f}")
+                plt.axvline(
+                    value,
+                    color=color,
+                    linestyle=":",
+                    linewidth=2,
+                    label=f"{int(perc * 100)}-й перцентиль: {value:.2f}",
+                )
 
             # Добавляем идеальное нормальное распределение
             try:
                 x_range = np.linspace(data.min(), data.max(), 1000)  # Диапазон значений
-                ideal_pdf = norm.pdf(x_range, loc=mean, scale=std_dev)  # Плотность вероятности нормального распределения
-                ideal_pdf_scaled = ideal_pdf * len(data) * (data.max() - data.min()) / 30  # Масштабируем для совпадения с гистограммой
-                plt.plot(x_range, ideal_pdf_scaled, color="orange", linestyle="--", linewidth=2.5, label="Идеальное распределение")
+                ideal_pdf = norm.pdf(
+                    x_range, loc=mean, scale=std_dev
+                )  # Плотность вероятности нормального распределения
+                ideal_pdf_scaled = (
+                    ideal_pdf * len(data) * (data.max() - data.min()) / 30
+                )  # Масштабируем для совпадения с гистограммой
+                plt.plot(
+                    x_range,
+                    ideal_pdf_scaled,
+                    color="orange",
+                    linestyle="--",
+                    linewidth=2.5,
+                    label="Идеальное распределение",
+                )
             except Exception as e:
-                print(f"Ошибка при построении идеального распределения для столбца {column}: {e}")
+                print(
+                    f"Ошибка при построении идеального распределения для столбца {column}: {e}"
+                )
 
             # Вычисляем пиковое значение KDE
             try:
@@ -354,12 +460,17 @@ class EDAProcessor:
                 peak_y = kde_values.max()
 
                 # Аннотация пика
-                plt.annotate(f"Пик: {peak_x:.2f}", xy=(peak_x, peak_y),
-                            xytext=(peak_x + 0.5, peak_y + 0.1),
-                            arrowprops=dict(facecolor='black', arrowstyle="->"),
-                            fontsize=10)
+                plt.annotate(
+                    f"Пик: {peak_x:.2f}",
+                    xy=(peak_x, peak_y),
+                    xytext=(peak_x + 0.5, peak_y + 0.1),
+                    arrowprops=dict(facecolor="black", arrowstyle="->"),
+                    fontsize=10,
+                )
             except np.linalg.LinAlgError:
-                print(f"Не удалось построить KDE для столбца {column}, так как данные имеют низкую дисперсию.")
+                print(
+                    f"Не удалось построить KDE для столбца {column}, так как данные имеют низкую дисперсию."
+                )
                 peak_x = None
 
             # Легенда
@@ -367,7 +478,7 @@ class EDAProcessor:
 
             # Сохранение графика
             file_path = os.path.join(self.output_dir, f"kde_distribution_{column}.jpg")
-            plt.savefig(file_path, bbox_inches='tight')
+            plt.savefig(file_path, bbox_inches="tight")
             plt.show()
             plt.close()
 
@@ -390,19 +501,21 @@ class EDAProcessor:
             range_info = f"[{lower:.2f}, {upper:.2f}]"
 
             # Сохранение данных в итоговую таблицу
-            summary_data.append({
-                "Признак": column,
-                "Эксцесс": round(kurt, 2),
-                "Асимметрия": round(skewness, 2),
-                "Пик": round(peak_x, 2) if peak_x else None,
-                "Среднее": round(mean, 2),
-                "Медиана": round(median, 2),
-                "25-й перцентиль": round(percentile_values[0.25], 2),
-                "75-й перцентиль": round(percentile_values[0.75], 2),
-                "99-й перцентиль": round(percentile_values[0.99], 2),
-                "Распределение": range_info,
-                "Вывод": distribution
-            })
+            summary_data.append(
+                {
+                    "Признак": column,
+                    "Эксцесс": round(kurt, 2),
+                    "Асимметрия": round(skewness, 2),
+                    "Пик": round(peak_x, 2) if peak_x else None,
+                    "Среднее": round(mean, 2),
+                    "Медиана": round(median, 2),
+                    "25-й перцентиль": round(percentile_values[0.25], 2),
+                    "75-й перцентиль": round(percentile_values[0.75], 2),
+                    "99-й перцентиль": round(percentile_values[0.99], 2),
+                    "Распределение": range_info,
+                    "Вывод": distribution,
+                }
+            )
 
         summary_df = pd.DataFrame(summary_data)
         return summary_df
@@ -431,13 +544,12 @@ class EDAProcessor:
             upper_bound = Q3 + 1.5 * IQR
 
             # Находим выбросы
-            outliers = self.df[(self.df[column] < lower_bound) | (self.df[column] > upper_bound)][column].tolist()
+            outliers = self.df[
+                (self.df[column] < lower_bound) | (self.df[column] > upper_bound)
+            ][column].tolist()
 
             # Добавляем данные о выбросах в сводную таблицу
-            outlier_summary.append({
-                'Признак': column,
-                'Выбросы': outliers
-            })
+            outlier_summary.append({"Признак": column, "Выбросы": outliers})
 
             # Построение графика
             plt.figure(figsize=(8, 4))
@@ -445,7 +557,7 @@ class EDAProcessor:
             plt.title(f"Ящик с усами: {column}")
             plt.xlabel(column)
             file_path = os.path.join(self.output_dir, f"boxplot_{column}.jpg")
-            plt.savefig(file_path, bbox_inches='tight')
+            plt.savefig(file_path, bbox_inches="tight")
             plt.show()
             plt.close()
 
@@ -471,15 +583,14 @@ class EDAProcessor:
             # Убираем пропуски для расчета Z-score
             non_na_data = self.df[column].dropna()
             z_scores = zscore(non_na_data)
-            
+
             # Применяем фильтрацию, используя индексировку
-            outliers = non_na_data[(z_scores > threshold) | (z_scores < -threshold)].tolist()
+            outliers = non_na_data[
+                (z_scores > threshold) | (z_scores < -threshold)
+            ].tolist()
 
             # Добавляем данные о выбросах в сводную таблицу
-            outlier_summary.append({
-                'Признак': column,
-                'Выбросы': outliers
-            })
+            outlier_summary.append({"Признак": column, "Выбросы": outliers})
 
             # Построение графика выбросов (Boxplot для Z-score)
             plt.figure(figsize=(10, 6))
@@ -489,7 +600,7 @@ class EDAProcessor:
 
             # Сохранение графика
             file_path = os.path.join(self.output_dir, f"zscore_boxplot_{column}.jpg")
-            plt.savefig(file_path, bbox_inches='tight')
+            plt.savefig(file_path, bbox_inches="tight")
             plt.show()
             plt.close()
 
@@ -519,23 +630,31 @@ class EDAProcessor:
 
             # Пропускаем столбцы с датами
             try:
-                parsed_dates = pd.to_datetime(col1_data, format='%d.%m.%Y', errors='coerce')
+                parsed_dates = pd.to_datetime(
+                    col1_data, format="%d.%m.%Y", errors="coerce"
+                )
                 if parsed_dates.notna().mean() > 0.8:
-                    print(f"Пропущен анализ для столбца {col1}, так как он содержит данные формата даты.")
+                    print(
+                        f"Пропущен анализ для столбца {col1}, так как он содержит данные формата даты."
+                    )
                     continue
             except Exception as e:
                 print(f"Ошибка при проверке формата даты для столбца {col1}: {e}")
                 continue
 
-            for col2 in categorical_columns[i + 1:]:
+            for col2 in categorical_columns[i + 1 :]:
                 # Удаляем пропуски
                 col2_data = self.df[col2].dropna()
 
                 # Пропускаем столбцы с датами
                 try:
-                    parsed_dates = pd.to_datetime(col2_data, format='%d.%m.%Y', errors='coerce')
+                    parsed_dates = pd.to_datetime(
+                        col2_data, format="%d.%m.%Y", errors="coerce"
+                    )
                     if parsed_dates.notna().mean() > 0.8:
-                        print(f"Пропущен анализ для столбца {col2}, так как он содержит данные формата даты.")
+                        print(
+                            f"Пропущен анализ для столбца {col2}, так как он содержит данные формата даты."
+                        )
                         continue
                 except Exception as e:
                     print(f"Ошибка при проверке формата даты для столбца {col2}: {e}")
@@ -545,16 +664,26 @@ class EDAProcessor:
                 ctab = pd.crosstab(self.df[col1], self.df[col2], dropna=True)
 
                 # Добавляем информацию о паре переменных
-                ctab.index = pd.MultiIndex.from_product([[col1], ctab.index], names=["Признак 1", "Категории признака 1"])
-                ctab.columns = pd.MultiIndex.from_product([[col2], ctab.columns], names=["Признак 2", "Категории признака 2"])
+                ctab.index = pd.MultiIndex.from_product(
+                    [[col1], ctab.index], names=["Признак 1", "Категории признака 1"]
+                )
+                ctab.columns = pd.MultiIndex.from_product(
+                    [[col2], ctab.columns], names=["Признак 2", "Категории признака 2"]
+                )
                 combined_cross_tab.append(ctab)
 
                 # Анализ связи
-                unique_combinations = (ctab.sum(axis=1) == 1).all() and (ctab.sum(axis=0) == 1).all()
+                unique_combinations = (ctab.sum(axis=1) == 1).all() and (
+                    ctab.sum(axis=0) == 1
+                ).all()
                 if unique_combinations:
-                    conclusions[f"{col1} vs {col2}"] = "Чёткая взаимосвязь 1:1 (каждой категории одной переменной соответствует только одна категория другой переменной)."
+                    conclusions[
+                        f"{col1} vs {col2}"
+                    ] = "Чёткая взаимосвязь 1:1 (каждой категории одной переменной соответствует только одна категория другой переменной)."
                 else:
-                    conclusions[f"{col1} vs {col2}"] = "Существуют неоднозначные связи (одна категория соответствует нескольким категориям другой переменной)."
+                    conclusions[
+                        f"{col1} vs {col2}"
+                    ] = "Существуют неоднозначные связи (одна категория соответствует нескольким категориям другой переменной)."
 
         # Объединяем все таблицы в одну
         if combined_cross_tab:
@@ -573,19 +702,23 @@ class EDAProcessor:
         numeric_columns (list): Список числовых колонок. Если None, используются все числовые столбцы.
         """
         if numeric_columns is None:
-            numeric_columns = self.df.select_dtypes(include=['number']).columns.tolist()
+            numeric_columns = self.df.select_dtypes(include=["number"]).columns.tolist()
 
         if not numeric_columns:
             print("Нет числовых колонок для построения графиков парных зависимостей.")
             return
 
         # Построение pairplot
-        pairplot_fig = sns.pairplot(self.df[numeric_columns], diag_kind="kde", corner=True)
-        pairplot_fig.fig.suptitle("Графики парных зависимостей числовых признаков", y=1.02, fontsize=16)
+        pairplot_fig = sns.pairplot(
+            self.df[numeric_columns], diag_kind="kde", corner=True
+        )
+        pairplot_fig.fig.suptitle(
+            "Графики парных зависимостей числовых признаков", y=1.02, fontsize=16
+        )
 
         # Сохранение графика
         file_path = os.path.join(self.output_dir, "numeric_pairplot.jpg")
-        pairplot_fig.savefig(file_path, bbox_inches='tight')
+        pairplot_fig.savefig(file_path, bbox_inches="tight")
         plt.show()
 
         print(f"Графики парных зависимостей сохранены в: {file_path}")
@@ -610,19 +743,29 @@ class EDAProcessor:
 
             # Проверяем, если колонка полностью пустая
             if non_na_data.empty:
-                print(f"Пропущен анализ для столбца {col}, так как он пустой после удаления пропусков.")
+                print(
+                    f"Пропущен анализ для столбца {col}, так как он пустой после удаления пропусков."
+                )
                 continue
 
             # Проверяем, является ли колонка числовой
             if pd.api.types.is_numeric_dtype(non_na_data):
-                print(f"Пропущен анализ для столбца {col}, так как он содержит числовые данные.")
+                print(
+                    f"Пропущен анализ для столбца {col}, так как он содержит числовые данные."
+                )
                 continue
 
             # Проверяем, является ли колонка датой
             try:
-                parsed_dates = pd.to_datetime(non_na_data, format='%d.%m.%Y', errors='coerce')
-                if parsed_dates.notna().mean() > 0.8:  # Если более 80% значений интерпретируются как даты
-                    print(f"Пропущен анализ для столбца {col}, так как он содержит данные формата даты.")
+                parsed_dates = pd.to_datetime(
+                    non_na_data, format="%d.%m.%Y", errors="coerce"
+                )
+                if (
+                    parsed_dates.notna().mean() > 0.8
+                ):  # Если более 80% значений интерпретируются как даты
+                    print(
+                        f"Пропущен анализ для столбца {col}, так как он содержит данные формата даты."
+                    )
                     continue
             except Exception as e:
                 print(f"Ошибка при проверке формата даты для столбца {col}: {e}")
@@ -636,13 +779,20 @@ class EDAProcessor:
         return rare_categories
 
     @timing
-    def analyze_correlations(self, target_column=None, threshold=0.5, correlation_types=None, include_phi=False, include_cramers_v=False):
+    def analyze_correlations(
+        self,
+        target_column=None,
+        threshold=0.5,
+        correlation_types=None,
+        include_phi=False,
+        include_cramers_v=False,
+    ):
         """
         Анализ корреляций между числовыми признаками и целевой переменной.
         Параметры:
         target_column (str): Название столбца с целевой переменной (может быть числовой или категориальной).
         threshold (float): Порог для включения коррелирующих пар (по модулю).
-        correlation_types (list): Список типов корреляций для анализа. Доступные значения: 
+        correlation_types (list): Список типов корреляций для анализа. Доступные значения:
                                 'pearson', 'spearman', 'kendall'. По умолчанию все три.
         include_phi (bool): Включить расчет Phi-коэффициента для бинарных данных.
         include_cramers_v (bool): Включить расчет Cramér's V для категориальных данных.
@@ -653,25 +803,29 @@ class EDAProcessor:
             - 'cramers_v': DataFrame с Cramer's V для категориального таргета и категориальных признаков.
         """
         results = {}
-        
+
         # Если пользователь не указал типы корреляций, используем все три по умолчанию
         if correlation_types is None:
-            correlation_types = ['pearson', 'spearman', 'kendall']
-        
+            correlation_types = ["pearson", "spearman", "kendall"]
+
         # Предварительная проверка: наличие целевой переменной
         if target_column is None or target_column not in self.df.columns:
             raise ValueError("Укажите корректное название целевой переменной.")
-        
+
         # Убираем пропуски и очищаем данные
         self.df = self.df.dropna()
-        
+
         # Разделение признаков по типам
-        numeric_columns = self.df.select_dtypes(include=['number']).columns.tolist()
-        categorical_columns = self.df.select_dtypes(include=['object', 'category']).columns.tolist()
-        
+        numeric_columns = self.df.select_dtypes(include=["number"]).columns.tolist()
+        categorical_columns = self.df.select_dtypes(
+            include=["object", "category"]
+        ).columns.tolist()
+
         if target_column not in numeric_columns + categorical_columns:
-            raise ValueError("Целевая переменная должна быть числовой или категориальной.")
-        
+            raise ValueError(
+                "Целевая переменная должна быть числовой или категориальной."
+            )
+
         # Функция для определения уровня связи по шкале Чеддока
         def cheddock_scale(value):
             if value < 0.1:
@@ -688,7 +842,7 @@ class EDAProcessor:
                 return "Весьма высокая связь"
             else:
                 return "Идеальная связь"
-        
+
         # Функция для интерпретации Cramér's V для категориальных данных
         def cramers_v_scale(value):
             if value <= 0.2:
@@ -699,101 +853,150 @@ class EDAProcessor:
                 return "Сильная связь"
             else:
                 return "Нет связи"
-        
+
         # 1. Корреляция для числовых признаков
         if target_column in numeric_columns:
             correlations = {}
-            if 'pearson' in correlation_types:
-                correlations['pearson'] = self.df[numeric_columns].corr(method='pearson')
-            if 'spearman' in correlation_types:
-                correlations['spearman'] = self.df[numeric_columns].corr(method='spearman')
-            if 'kendall' in correlation_types:
-                correlations['kendall'] = self.df[numeric_columns].corr(method='kendall')
-            
+            if "pearson" in correlation_types:
+                correlations["pearson"] = self.df[numeric_columns].corr(
+                    method="pearson"
+                )
+            if "spearman" in correlation_types:
+                correlations["spearman"] = self.df[numeric_columns].corr(
+                    method="spearman"
+                )
+            if "kendall" in correlation_types:
+                correlations["kendall"] = self.df[numeric_columns].corr(
+                    method="kendall"
+                )
+
             # Список для хранения пар с высокой корреляцией
             correlated_pairs = []
             processed_pairs = set()
-            
+
             for col1 in numeric_columns:
                 for col2 in numeric_columns:
-                    if col1 != col2 and (col1, col2) not in processed_pairs and (col2, col1) not in processed_pairs:
+                    if (
+                        col1 != col2
+                        and (col1, col2) not in processed_pairs
+                        and (col2, col1) not in processed_pairs
+                    ):
                         pair_data = {"Признак 1": col1, "Признак 2": col2}
-                        
+
                         # Добавляем выбранные корреляции
                         for corr_type in correlation_types:
                             if corr_type in correlations:
-                                corr_value = abs(correlations[corr_type].loc[col1, col2])
-                                pair_data[f"Корреляция {corr_type.capitalize()}"] = round(corr_value, 2)
-                                pair_data[f"Вывод по шкале Чеддока ({corr_type.capitalize()})"] = cheddock_scale(corr_value)
-                        
+                                corr_value = abs(
+                                    correlations[corr_type].loc[col1, col2]
+                                )
+                                pair_data[
+                                    f"Корреляция {corr_type.capitalize()}"
+                                ] = round(corr_value, 2)
+                                pair_data[
+                                    f"Вывод по шкале Чеддока ({corr_type.capitalize()})"
+                                ] = cheddock_scale(corr_value)
+
                         # Рассчитываем Phi-коэффициент и Cramér's V только если указано
                         if include_phi or include_cramers_v:
-                            contingency_table = pd.crosstab(self.df[col1].round(), self.df[col2].round())
+                            contingency_table = pd.crosstab(
+                                self.df[col1].round(), self.df[col2].round()
+                            )
                             chi2, _, _, _ = chi2_contingency(contingency_table)
                             n = contingency_table.sum().sum()
                             rows, cols = contingency_table.shape
-                            
+
                             # Phi-коэффициент только для 2x2 таблиц
                             if rows == 2 and cols == 2 and include_phi:
                                 phi_coefficient = np.sqrt(chi2 / n) if n > 0 else 0
                                 pair_data["Phi-коэффициент"] = round(phi_coefficient, 2)
-                            
+
                             # Cramér's V для любых таблиц
                             if include_cramers_v:
                                 min_dim = min(rows - 1, cols - 1)
-                                cramers_v = np.sqrt(chi2 / (n * min_dim)) if min_dim > 0 else None
-                                pair_data["Cramer's V"] = round(cramers_v, 2) if cramers_v is not None else None
-                        
+                                cramers_v = (
+                                    np.sqrt(chi2 / (n * min_dim))
+                                    if min_dim > 0
+                                    else None
+                                )
+                                pair_data["Cramer's V"] = (
+                                    round(cramers_v, 2)
+                                    if cramers_v is not None
+                                    else None
+                                )
+
                         # Проверяем пороговое значение хотя бы для одной корреляции
-                        if any(pair_data.get(f"Корреляция {corr_type.capitalize()}") >= threshold for corr_type in correlation_types):
+                        if any(
+                            pair_data.get(f"Корреляция {corr_type.capitalize()}")
+                            >= threshold
+                            for corr_type in correlation_types
+                        ):
                             correlated_pairs.append(pair_data)
                             processed_pairs.add((col1, col2))
-            
+
             # DataFrame с корреляциями
-            correlated_df = pd.DataFrame(correlated_pairs).drop_duplicates(subset=["Признак 1", "Признак 2"])
-            
+            correlated_df = pd.DataFrame(correlated_pairs).drop_duplicates(
+                subset=["Признак 1", "Признак 2"]
+            )
+
             # Сортируем результаты по выбранной корреляции (если указано)
             if len(correlation_types) > 0:
-                primary_corr_type = correlation_types[0]  # Берем первую корреляцию из списка
+                primary_corr_type = correlation_types[
+                    0
+                ]  # Берем первую корреляцию из списка
                 sort_column = f"Корреляция {primary_corr_type.capitalize()}"
                 if sort_column in correlated_df.columns:
-                    correlated_df = correlated_df.sort_values(by=sort_column, ascending=False)
-            
-            results['correlations'] = correlated_df
-        
+                    correlated_df = correlated_df.sort_values(
+                        by=sort_column, ascending=False
+                    )
+
+            results["correlations"] = correlated_df
+
         # 2. ANOVA для категориального таргета
         elif target_column in categorical_columns:
             anova_results = []
             for col in numeric_columns:
                 unique_groups = self.df[target_column].dropna().unique()
                 if len(unique_groups) > 1:  # Проверка на достаточное количество групп
-                    groups = [self.df[col][self.df[target_column] == group] for group in unique_groups]
+                    groups = [
+                        self.df[col][self.df[target_column] == group]
+                        for group in unique_groups
+                    ]
                     # ANOVA тест
                     f_stat, p_value = f_oneway(*groups)
-                    anova_results.append({
-                        "Признак": col,
-                        "F-статистика": round(f_stat, 2),
-                        "P-значение": round(p_value, 4)
-                    })
-            results['anova'] = pd.DataFrame(anova_results)
-            
+                    anova_results.append(
+                        {
+                            "Признак": col,
+                            "F-статистика": round(f_stat, 2),
+                            "P-значение": round(p_value, 4),
+                        }
+                    )
+            results["anova"] = pd.DataFrame(anova_results)
+
             # 3. Cramér's V для категориальных признаков
             cramers_v_results = []
             for col in categorical_columns:
                 if col != target_column:
-                    contingency_table = pd.crosstab(self.df[col], self.df[target_column])
+                    contingency_table = pd.crosstab(
+                        self.df[col], self.df[target_column]
+                    )
                     chi2, _, _, _ = chi2_contingency(contingency_table)
                     n = contingency_table.sum().sum()
                     rows, cols = contingency_table.shape
                     min_dim = min(rows - 1, cols - 1)
                     cramers_v = np.sqrt(chi2 / (n * min_dim)) if min_dim > 0 else None
-                    cramers_v_results.append({
-                        "Признак": col,
-                        "Cramer's V": round(cramers_v, 2) if cramers_v is not None else None,
-                        "Интерпретация (Cramer's V)": cramers_v_scale(cramers_v) if cramers_v is not None else "Нет связи"
-                    })
-            results['cramers_v'] = pd.DataFrame(cramers_v_results)
-        
+                    cramers_v_results.append(
+                        {
+                            "Признак": col,
+                            "Cramer's V": round(cramers_v, 2)
+                            if cramers_v is not None
+                            else None,
+                            "Интерпретация (Cramer's V)": cramers_v_scale(cramers_v)
+                            if cramers_v is not None
+                            else "Нет связи",
+                        }
+                    )
+            results["cramers_v"] = pd.DataFrame(cramers_v_results)
+
         return results
 
     @timing
@@ -833,20 +1036,28 @@ class EDAProcessor:
 
         for col1 in phik_corr.columns:
             for col2 in phik_corr.index:
-                if col1 != col2 and (col1, col2) not in processed_pairs and (col2, col1) not in processed_pairs:
+                if (
+                    col1 != col2
+                    and (col1, col2) not in processed_pairs
+                    and (col2, col1) not in processed_pairs
+                ):
                     phik_value = abs(phik_corr.loc[col1, col2])
 
                     if phik_value >= threshold:
-                        correlated_pairs.append({
-                            "Признак 1": col1,
-                            "Признак 2": col2,
-                            "Phik-коэффициент": round(phik_value, 2),
-                            "Вывод": interpret_phik(phik_value)
-                        })
+                        correlated_pairs.append(
+                            {
+                                "Признак 1": col1,
+                                "Признак 2": col2,
+                                "Phik-коэффициент": round(phik_value, 2),
+                                "Вывод": interpret_phik(phik_value),
+                            }
+                        )
                         processed_pairs.add((col1, col2))
 
         # Создаем DataFrame с результатами
-        phik_correlations_df = pd.DataFrame(correlated_pairs).drop_duplicates(subset=["Признак 1", "Признак 2"])
+        phik_correlations_df = pd.DataFrame(correlated_pairs).drop_duplicates(
+            subset=["Признак 1", "Признак 2"]
+        )
 
         return phik_correlations_df
 
@@ -865,34 +1076,36 @@ class EDAProcessor:
         self.df[datetime_column] = pd.to_datetime(self.df[datetime_column])
 
         # Извлекаем атрибуты временных меток
-        self.df['Год'] = self.df[datetime_column].dt.year
-        self.df['Месяц'] = self.df[datetime_column].dt.month
-        self.df['День'] = self.df[datetime_column].dt.day
-        self.df['Час'] = self.df[datetime_column].dt.hour
+        self.df["Год"] = self.df[datetime_column].dt.year
+        self.df["Месяц"] = self.df[datetime_column].dt.month
+        self.df["День"] = self.df[datetime_column].dt.day
+        self.df["Час"] = self.df[datetime_column].dt.hour
 
         # Список временных атрибутов
-        attributes = ['Год', 'Месяц', 'День', 'Час']
+        attributes = ["Год", "Месяц", "День", "Час"]
         summary_tables = {}
 
         for attr in attributes:
             data = self.df[attr].dropna()
 
             if data.nunique() <= 1:
-                print(f"Пропущен график для '{attr}', так как значения одинаковы или отсутствует дисперсия.")
+                print(
+                    f"Пропущен график для '{attr}', так как значения одинаковы или отсутствует дисперсия."
+                )
                 continue
 
             plt.figure(figsize=(10, 6))
 
             # Гистограмма с KDE
             sns.histplot(
-                data, 
-                kde=True, 
-                bins=30, 
-                color='royalblue', 
-                edgecolor='black', 
-                alpha=0.8, 
-                line_kws={"color": "orange", "linewidth": 2}, 
-                label="KDE (плотность)"
+                data,
+                kde=True,
+                bins=30,
+                color="royalblue",
+                edgecolor="black",
+                alpha=0.8,
+                line_kws={"color": "orange", "linewidth": 2},
+                label="KDE (плотность)",
             )
 
             # Вычисляем параметры нормального распределения
@@ -904,38 +1117,52 @@ class EDAProcessor:
 
             # Добавляем кривую нормального распределения
             plt.plot(
-                x_range, 
-                ideal_pdf_scaled, 
-                color="red", 
-                linestyle="--", 
-                linewidth=2.5, 
-                label="Идеальное распределение"
+                x_range,
+                ideal_pdf_scaled,
+                color="red",
+                linestyle="--",
+                linewidth=2.5,
+                label="Идеальное распределение",
             )
 
             # Медиана и среднее
             median = data.median()
-            plt.axvline(median, color="blue", linestyle="--", linewidth=2, label=f"Медиана: {median:.2f}")
-            plt.axvline(mean, color="green", linestyle="-.", linewidth=2, label=f"Среднее: {mean:.2f}")
+            plt.axvline(
+                median,
+                color="blue",
+                linestyle="--",
+                linewidth=2,
+                label=f"Медиана: {median:.2f}",
+            )
+            plt.axvline(
+                mean,
+                color="green",
+                linestyle="-.",
+                linewidth=2,
+                label=f"Среднее: {mean:.2f}",
+            )
 
             # Добавление информации на график
             plt.title(f"Распределение по '{attr}'", fontsize=16)
             plt.xlabel(attr, fontsize=12)
             plt.ylabel("Частота", fontsize=12)
-            plt.grid(axis='y', linestyle='--', alpha=0.7)
+            plt.grid(axis="y", linestyle="--", alpha=0.7)
 
             # Легенда
             plt.legend(fontsize=10)
 
             # Сохранение графика
-            file_path = os.path.join(self.output_dir, f"datetime_attribute_distribution_{attr}.jpg")
-            plt.savefig(file_path, bbox_inches='tight')
+            file_path = os.path.join(
+                self.output_dir, f"datetime_attribute_distribution_{attr}.jpg"
+            )
+            plt.savefig(file_path, bbox_inches="tight")
             plt.show()
 
             print(f"График распределения по '{attr}' сохранён в: {file_path}")
 
             # Сводная таблица частот
             summary_table = data.value_counts().sort_index().reset_index()
-            summary_table.columns = [attr, 'Частота']
+            summary_table.columns = [attr, "Частота"]
             summary_tables[attr] = summary_table
 
         return summary_tables
@@ -967,8 +1194,10 @@ class EDAProcessor:
         for ax in fig.axes:
             ax.tick_params(axis="x", rotation=45)
 
-        file_path = os.path.join(self.output_dir, f"stl_decomposition_{value_column}.jpg")
-        plt.savefig(file_path, bbox_inches='tight')
+        file_path = os.path.join(
+            self.output_dir, f"stl_decomposition_{value_column}.jpg"
+        )
+        plt.savefig(file_path, bbox_inches="tight")
         plt.show()
         plt.close()
 
@@ -976,14 +1205,17 @@ class EDAProcessor:
         components = {
             "Trend": result.trend,
             "Seasonal": result.seasonal,
-            "Residual": result.resid
+            "Residual": result.resid,
         }
-        stats = {key: {
-            "Среднее": comp.mean(),
-            "Стандартное отклонение": comp.std(),
-            "Минимум": comp.min(),
-            "Максимум": comp.max()
-        } for key, comp in components.items()}
+        stats = {
+            key: {
+                "Среднее": comp.mean(),
+                "Стандартное отклонение": comp.std(),
+                "Минимум": comp.min(),
+                "Максимум": comp.max(),
+            }
+            for key, comp in components.items()
+        }
 
         return pd.DataFrame(stats).T
 
@@ -1012,20 +1244,28 @@ class EDAProcessor:
         # Построение графиков
         plt.figure(figsize=(12, 6))
         plot_acf(ts, lags=lags, title="ACF (Автокорреляция)")
-        plt.savefig(os.path.join(self.output_dir, f"acf_{value_column}.jpg"), bbox_inches='tight')
+        plt.savefig(
+            os.path.join(self.output_dir, f"acf_{value_column}.jpg"),
+            bbox_inches="tight",
+        )
         plt.show()
 
         plt.figure(figsize=(12, 6))
         plot_pacf(ts, lags=lags, title="PACF (Частичная автокорреляция)")
-        plt.savefig(os.path.join(self.output_dir, f"pacf_{value_column}.jpg"), bbox_inches='tight')
+        plt.savefig(
+            os.path.join(self.output_dir, f"pacf_{value_column}.jpg"),
+            bbox_inches="tight",
+        )
         plt.show()
 
         # Создание таблицы с ACF и PACF
-        acf_pacf_table = pd.DataFrame({
-            "Лаг": range(len(acf_values)),
-            "ACF (Автокорреляция)": acf_values,
-            "PACF (Частичная автокорреляция)": pacf_values
-        })
+        acf_pacf_table = pd.DataFrame(
+            {
+                "Лаг": range(len(acf_values)),
+                "ACF (Автокорреляция)": acf_values,
+                "PACF (Частичная автокорреляция)": pacf_values,
+            }
+        )
 
         return acf_pacf_table
 
@@ -1052,12 +1292,12 @@ class EDAProcessor:
             "Critical Value (1%)": result[4]["1%"],
             "Critical Value (5%)": result[4]["5%"],
             "Critical Value (10%)": result[4]["10%"],
-            "Stationary": result[1] < 0.05
+            "Stationary": result[1] < 0.05,
         }
         return pd.DataFrame([stats])
 
     @timing
-    def plot_seasonality_heatmap(self, datetime_column, value_column, freq='month'):
+    def plot_seasonality_heatmap(self, datetime_column, value_column, freq="month"):
         """
         Построить тепловую карту сезонности и вернуть используемую таблицу.
 
@@ -1070,30 +1310,40 @@ class EDAProcessor:
         pd.DataFrame: Таблица, используемая для построения тепловой карты.
         """
         self.df[datetime_column] = pd.to_datetime(self.df[datetime_column])
-        self.df['Year'] = self.df[datetime_column].dt.year
+        self.df["Year"] = self.df[datetime_column].dt.year
 
-        if freq == 'month':
-            self.df['Month'] = self.df[datetime_column].dt.month
-            pivot = self.df.pivot_table(index='Year', columns='Month', values=value_column, aggfunc='mean')
+        if freq == "month":
+            self.df["Month"] = self.df[datetime_column].dt.month
+            pivot = self.df.pivot_table(
+                index="Year", columns="Month", values=value_column, aggfunc="mean"
+            )
             ylabel, xlabel = "Год", "Месяц"
-        elif freq == 'day_of_week':
-            self.df['DayOfWeek'] = self.df[datetime_column].dt.dayofweek
-            pivot = self.df.pivot_table(index='Year', columns='DayOfWeek', values=value_column, aggfunc='mean')
+        elif freq == "day_of_week":
+            self.df["DayOfWeek"] = self.df[datetime_column].dt.dayofweek
+            pivot = self.df.pivot_table(
+                index="Year", columns="DayOfWeek", values=value_column, aggfunc="mean"
+            )
             ylabel, xlabel = "Год", "День недели"
-        elif freq == 'hour':
-            self.df['Hour'] = self.df[datetime_column].dt.hour
-            pivot = self.df.pivot_table(index='Year', columns='Hour', values=value_column, aggfunc='mean')
+        elif freq == "hour":
+            self.df["Hour"] = self.df[datetime_column].dt.hour
+            pivot = self.df.pivot_table(
+                index="Year", columns="Hour", values=value_column, aggfunc="mean"
+            )
             ylabel, xlabel = "Год", "Час"
         else:
-            raise ValueError("Неверное значение freq. Используйте 'month', 'day_of_week' или 'hour'.")
+            raise ValueError(
+                "Неверное значение freq. Используйте 'month', 'day_of_week' или 'hour'."
+            )
 
         plt.figure(figsize=(12, 8))
-        sns.heatmap(pivot, cmap='viridis', annot=True, fmt=".1f", linewidths=0.5)
+        sns.heatmap(pivot, cmap="viridis", annot=True, fmt=".1f", linewidths=0.5)
         plt.title(f"Тепловая карта сезонности: {value_column}", fontsize=14)
         plt.xlabel(xlabel, fontsize=12)
         plt.ylabel(ylabel, fontsize=12)
-        file_path = os.path.join(self.output_dir, f"seasonality_heatmap_{value_column}.jpg")
-        plt.savefig(file_path, bbox_inches='tight')
+        file_path = os.path.join(
+            self.output_dir, f"seasonality_heatmap_{value_column}.jpg"
+        )
+        plt.savefig(file_path, bbox_inches="tight")
         plt.show()
 
         return pivot
@@ -1118,7 +1368,13 @@ class EDAProcessor:
 
         # Построение графика
         plt.figure(figsize=(12, 6))
-        plt.plot(self.df[datetime_column], self.df[value_column], marker="o", linestyle="-", color="blue")
+        plt.plot(
+            self.df[datetime_column],
+            self.df[value_column],
+            marker="o",
+            linestyle="-",
+            color="blue",
+        )
         plt.title(f"Временные ряды: {value_column}", fontsize=16)
         plt.xlabel("Дата", fontsize=12)
         plt.ylabel("Значение", fontsize=12)

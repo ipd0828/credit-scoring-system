@@ -1,15 +1,16 @@
 """Упрощенное FastAPI приложение без проблемных зависимостей."""
 
+import random
 import time
 import uuid
 from datetime import datetime
-from typing import Dict, Any, Optional
-import random
+from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+
 
 # Простые модели данных
 class CreditScoringRequest(BaseModel):
@@ -27,6 +28,7 @@ class CreditScoringRequest(BaseModel):
     delinq_2yrs: int
     pub_rec: int = 0
 
+
 class ModelPrediction(BaseModel):
     prediction: int  # 0 = одобрено, 1 = отклонено
     probability: float
@@ -36,12 +38,14 @@ class ModelPrediction(BaseModel):
     model_version: str = "1.0.0"
     features_importance: Optional[Dict[str, float]] = None
 
+
 class CreditScoringResponse(BaseModel):
     success: bool
     prediction: ModelPrediction
     processing_time_ms: float
     request_id: str
     timestamp: str
+
 
 class HealthCheckResponse(BaseModel):
     status: str
@@ -51,13 +55,14 @@ class HealthCheckResponse(BaseModel):
     model_status: str = "healthy"
     uptime_seconds: float
 
+
 # Создание FastAPI приложения
 app = FastAPI(
     title="API Кредитного Скоринга (Упрощенная версия)",
     description="Упрощенная версия API для кредитного скоринга без ML зависимостей",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Добавление CORS middleware
@@ -72,13 +77,14 @@ app.add_middleware(
 # Время запуска для расчета uptime
 startup_time = time.time()
 
+
 # Простая логика предсказания (заглушка)
 def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
     """Простая логика предсказания кредитного скоринга."""
-    
+
     # Базовые правила для предсказания
     risk_score = 0
-    
+
     # FICO Score (основной фактор)
     fico_avg = (request.fico_range_low + request.fico_range_high) / 2
     if fico_avg >= 750:
@@ -89,7 +95,7 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         risk_score += 10
     else:
         risk_score += 5
-    
+
     # DTI (Debt-to-Income)
     if request.dti <= 20:
         risk_score += 15
@@ -99,7 +105,7 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         risk_score += 5
     else:
         risk_score += 0
-    
+
     # Revolving Utilization
     if request.revol_util <= 20:
         risk_score += 10
@@ -107,7 +113,7 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         risk_score += 5
     else:
         risk_score += 0
-    
+
     # Employment Length
     emp_length_score = {
         "10+ years": 10,
@@ -121,19 +127,14 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         "2 years": 2,
         "1 year": 1,
         "< 1 year": 0,
-        "n/a": 0
+        "n/a": 0,
     }
     risk_score += emp_length_score.get(request.emp_length, 0)
-    
+
     # Home Ownership
-    home_ownership_score = {
-        "OWN": 10,
-        "MORTGAGE": 8,
-        "RENT": 5,
-        "OTHER": 3
-    }
+    home_ownership_score = {"OWN": 10, "MORTGAGE": 8, "RENT": 5, "OTHER": 3}
     risk_score += home_ownership_score.get(request.home_ownership, 0)
-    
+
     # Inquiries
     if request.inq_last_6mths <= 1:
         risk_score += 5
@@ -141,23 +142,23 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         risk_score += 3
     else:
         risk_score += 0
-    
+
     # Delinquencies
     if request.delinq_2yrs == 0:
         risk_score += 5
     else:
         risk_score += 0
-    
+
     # Нормализация risk_score (0-100)
     risk_score = min(100, max(0, risk_score))
-    
+
     # Определение предсказания
     threshold = 50  # Порог для одобрения
     prediction = 0 if risk_score >= threshold else 1
-    
+
     # Вероятность (обратная к risk_score)
     probability = (100 - risk_score) / 100
-    
+
     # Уровень уверенности
     if probability >= 0.8:
         confidence = "high"
@@ -165,13 +166,13 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         confidence = "medium"
     else:
         confidence = "low"
-    
+
     # Рекомендуемая сумма
     if prediction == 0:  # Одобрено
         recommended_amount = min(request.loan_amnt * 1.1, request.annual_inc * 0.3)
     else:
         recommended_amount = None
-    
+
     # Важность признаков (заглушка)
     features_importance = {
         "fico_score": 0.3,
@@ -180,9 +181,9 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         "emp_length": 0.15,
         "home_ownership": 0.1,
         "inq_last_6mths": 0.05,
-        "delinq_2yrs": 0.05
+        "delinq_2yrs": 0.05,
     }
-    
+
     return ModelPrediction(
         prediction=prediction,
         probability=probability,
@@ -190,8 +191,9 @@ def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
         risk_score=risk_score,
         recommended_amount=recommended_amount,
         model_version="1.0.0-simple",
-        features_importance=features_importance
+        features_importance=features_importance,
     )
+
 
 # Middleware для измерения времени обработки
 @app.middleware("http")
@@ -203,6 +205,7 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = str(process_time)
     return response
 
+
 # Глобальный обработчик исключений
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -212,9 +215,10 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={
             "success": False,
             "error": "Внутренняя ошибка сервера",
-            "message": "Произошла неожиданная ошибка"
-        }
+            "message": "Произошла неожиданная ошибка",
+        },
     )
+
 
 # Endpoints
 @app.get("/")
@@ -224,53 +228,55 @@ async def root():
         "message": "API Кредитного Скоринга (Упрощенная версия)",
         "version": "1.0.0",
         "docs": "/docs",
-        "health": "/api/v1/health"
+        "health": "/api/v1/health",
     }
+
 
 @app.get("/api/v1/health", response_model=HealthCheckResponse)
 async def health_check():
     """Endpoint для проверки состояния системы."""
     current_time = time.time()
     uptime = current_time - startup_time
-    
+
     return HealthCheckResponse(
         status="healthy",
         timestamp=datetime.utcnow().isoformat(),
         version="1.0.0",
         database_status="healthy",
         model_status="healthy",
-        uptime_seconds=uptime
+        uptime_seconds=uptime,
     )
+
 
 @app.post("/api/v1/predict", response_model=CreditScoringResponse)
 async def predict_credit_score(request: CreditScoringRequest):
     """Предсказать кредитный скоринг и одобрение займа."""
     start_time = time.time()
     request_id = str(uuid.uuid4())
-    
+
     try:
         # Выполнить предсказание
         prediction_result = simple_credit_prediction(request)
-        
+
         # Вычислить время обработки
         processing_time = (time.time() - start_time) * 1000
-        
+
         # Создать ответ
         response = CreditScoringResponse(
             success=True,
             prediction=prediction_result,
             processing_time_ms=processing_time,
             request_id=request_id,
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.utcnow().isoformat(),
         )
-        
+
         return response
-        
+
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Предсказание не удалось: {str(e)}"
+            status_code=500, detail=f"Предсказание не удалось: {str(e)}"
         )
+
 
 @app.get("/api/v1/model/info")
 async def get_model_info():
@@ -281,8 +287,9 @@ async def get_model_info():
         "threshold": 50,
         "features_count": 7,
         "last_updated": datetime.utcnow().isoformat(),
-        "description": "Упрощенная модель на основе правил"
+        "description": "Упрощенная модель на основе правил",
     }
+
 
 @app.get("/api/v1/predictions/stats")
 async def get_prediction_stats():
@@ -291,14 +298,11 @@ async def get_prediction_stats():
         "total_predictions": random.randint(1000, 5000),
         "approval_rate": round(random.uniform(0.6, 0.8), 3),
         "average_processing_time_ms": round(random.uniform(50, 200), 2),
-        "last_24h_predictions": random.randint(50, 200)
+        "last_24h_predictions": random.randint(50, 200),
     }
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "api.simple_main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+
+    uvicorn.run("api.simple_main:app", host="0.0.0.0", port=8000, reload=True)

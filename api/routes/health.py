@@ -2,10 +2,10 @@
 
 import time
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
-from fastapi import APIRouter, Depends, HTTPException
 import structlog
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.schemas.credit_scoring import HealthCheckResponse
 from config.settings import get_settings
@@ -23,7 +23,7 @@ async def health_check():
     try:
         current_time = time.time()
         uptime = current_time - startup_time
-        
+
         # Проверка подключения к базе данных
         database_status = "healthy"
         try:
@@ -33,7 +33,7 @@ async def health_check():
         except Exception as e:
             logger.error("Проверка состояния БД не удалась", error=str(e))
             database_status = "unhealthy"
-        
+
         # Проверка состояния модели
         model_status = "healthy"
         try:
@@ -43,21 +43,21 @@ async def health_check():
         except Exception as e:
             logger.error("Проверка состояния модели не удалась", error=str(e))
             model_status = "unhealthy"
-        
+
         # Определение общего статуса
         overall_status = "healthy"
         if database_status != "healthy" or model_status != "healthy":
             overall_status = "unhealthy"
-        
+
         return HealthCheckResponse(
             status=overall_status,
             timestamp=datetime.utcnow().isoformat(),
             version="1.0.0",
             database_status=database_status,
             model_status=model_status,
-            uptime_seconds=uptime
+            uptime_seconds=uptime,
         )
-        
+
     except Exception as e:
         logger.error("Проверка состояния не удалась", error=str(e))
         raise HTTPException(status_code=500, detail="Проверка состояния не удалась")
@@ -69,7 +69,7 @@ async def readiness_check():
     try:
         # Проверить, готовы ли все критические сервисы
         # Добавить реальные проверки готовности здесь
-        
+
         return {"status": "ready", "timestamp": datetime.utcnow().isoformat()}
     except Exception as e:
         logger.error("Проверка готовности не удалась", error=str(e))
