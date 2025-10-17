@@ -26,8 +26,10 @@ class TestCreditScoringService:
     @pytest.fixture
     def service_with_mock_model(self, mock_model, test_settings):
         """Service with mocked model."""
-        with patch("joblib.load", return_value=mock_model), \
-             patch("app.services.credit_scoring_service.get_settings", return_value=test_settings):
+        with patch("joblib.load", return_value=mock_model), patch(
+            "app.services.credit_scoring_service.get_settings",
+            return_value=test_settings,
+        ):
             service = CreditScoringService()
             service.model = mock_model
             return service

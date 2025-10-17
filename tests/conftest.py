@@ -358,5 +358,5 @@ def test_settings():
     return Settings(
         database_url="sqlite:///test.db",
         secret_key="test-secret-key",
-        jwt_secret_key="test-jwt-secret-key"
+        jwt_secret_key="test-jwt-secret-key",
     )
