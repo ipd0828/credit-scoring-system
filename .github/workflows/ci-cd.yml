@@ -83,6 +83,15 @@ jobs:
     - name: Create logs directory
       run: mkdir -p logs
     
+    - name: Create data directory
+      run: mkdir -p data/raw data/processed
+    
+    - name: Set environment variables for tests
+      run: |
+        echo "DATABASE_URL=sqlite:///test.db" >> $GITHUB_ENV
+        echo "SECRET_KEY=test-secret-key-for-ci" >> $GITHUB_ENV
+        echo "JWT_SECRET_KEY=test-jwt-secret-key-for-ci" >> $GITHUB_ENV
+    
     - name: Run unit tests
       run: |
         pytest tests/unit/ -v --cov=scripts --cov-report=xml --cov-report=html
