@@ -43,7 +43,10 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from tqdm import tqdm
 
 # Импорт MLflow
-from .simple_mlflow_tracking import setup_mlflow_experiment
+try:
+    from .simple_mlflow_tracking import setup_mlflow_experiment
+except ImportError:
+    from simple_mlflow_tracking import setup_mlflow_experiment
 
 warnings.filterwarnings("ignore")
 
