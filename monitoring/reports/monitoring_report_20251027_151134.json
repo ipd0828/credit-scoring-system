@@ -1,0 +1,253 @@
+{
+  "timestamp": "2025-10-27T15:11:34.049052",
+  "model_path": "models/trained/best_model.pkl",
+  "reference_data_path": "data/processed/X_train.csv",
+  "alerts": [
+    {
+      "type": "performance_degradation",
+      "severity": "high",
+      "message": "Обнаружена деградация производительности",
+      "details": "F1-score: 0.4393939393939394"
+    }
+  ],
+  "data_drift": {
+    "overall_drift_detected": "False",
+    "feature_drifts": {
+      "ID": {
+        "drift_detected": "False",
+        "ks_statistic": 0.013541666666666667,
+        "p_value": 0.9940597668123463,
+        "reference_mean": 14954.29875,
+        "current_mean": 14978.870833333332,
+        "reference_std": 8571.847870348427,
+        "current_std": 8618.553972078145
+      },
+      "LIMIT_BAL": {
+        "drift_detected": "False",
+        "ks_statistic": 0.0225,
+        "p_value": 0.7107696465271559,
+        "reference_mean": 167741.66666666666,
+        "current_mean": 171608.33333333334,
+        "reference_std": 129937.80844177703,
+        "current_std": 129275.89416140805
+      },
+      "SEX": {
+        "drift_detected": "False",
+        "ks_statistic": 0.017916666666666668,
+        "p_value": 0.9142971289276528,
+        "reference_mean": 1.5954166666666667,
+        "current_mean": 1.6133333333333333,
+        "reference_std": 0.490862360316736,
+        "current_std": 0.4871892342959771
+      },
+      "EDUCATION": {
+        "drift_detected": "False",
+        "ks_statistic": 0.00875,
+        "p_value": 0.999999322919048,
+        "reference_mean": 1.8527083333333334,
+        "current_mean": 1.8375,
+        "reference_std": 0.7857430379090612,
+        "current_std": 0.7723929758166558
+      },
+      "MARRIAGE": {
+        "drift_detected": "False",
+        "ks_statistic": 0.016875,
+        "p_value": 0.9448756979311426,
+        "reference_mean": 1.5497916666666667,
+        "current_mean": 1.5691666666666666,
+        "reference_std": 0.5196893841362218,
+        "current_std": 0.5152059489794109
+      },
+      "AGE": {
+        "drift_detected": "False",
+        "ks_statistic": 0.016875,
+        "p_value": 0.9448756979311426,
+        "reference_mean": 35.422291666666666,
+        "current_mean": 35.560833333333335,
+        "reference_std": 9.15253589295678,
+        "current_std": 9.138976969858382
+      },
+      "PAY_0": {
+        "drift_detected": "False",
+        "ks_statistic": 0.015416666666666667,
+        "p_value": 0.9749330159558214,
+        "reference_mean": -0.016875,
+        "current_mean": -0.016666666666666666,
+        "reference_std": 1.1145697404815753,
+        "current_std": 1.107886154800613
+      },
+      "PAY_2": {
+        "drift_detected": "False",
+        "ks_statistic": 0.028541666666666667,
+        "p_value": 0.41021508230185244,
+        "reference_mean": -0.155,
+        "current_mean": -0.09666666666666666,
+        "reference_std": 1.1998367604466484,
+        "current_std": 1.176212190956214
+      },
+      "PAY_3": {
+        "drift_detected": "False",
+        "ks_statistic": 0.020416666666666666,
+        "p_value": 0.8137614162029969,
+        "reference_mean": -0.16979166666666667,
+        "current_mean": -0.1125,
+        "reference_std": 1.2233932049325404,
+        "current_std": 1.1927682074333998
+      },
+      "PAY_4": {
+        "drift_detected": "False",
+        "ks_statistic": 0.02,
+        "p_value": 0.8327215763973754,
+        "reference_mean": -0.22708333333333333,
+        "current_mean": -0.2,
+        "reference_std": 1.1823244282732812,
+        "current_std": 1.1369889855642454
+      },
+      "PAY_5": {
+        "drift_detected": "False",
+        "ks_statistic": 0.014375,
+        "p_value": 0.9878786155250303,
+        "reference_mean": -0.2758333333333333,
+        "current_mean": -0.24833333333333332,
+        "reference_std": 1.1345046429546863,
+        "current_std": 1.1333141178112305
+      },
+      "PAY_6": {
+        "drift_detected": "False",
+        "ks_statistic": 0.02,
+        "p_value": 0.8327215763973754,
+        "reference_mean": -0.30875,
+        "current_mean": -0.2675,
+        "reference_std": 1.1399682038242822,
+        "current_std": 1.1417954417023408
+      },
+      "BILL_AMT1": {
+        "drift_detected": "True",
+        "ks_statistic": 0.04875,
+        "p_value": 0.02044030436986102,
+        "reference_mean": 51798.57270833333,
+        "current_mean": 54839.613333333335,
+        "reference_std": 74848.65443463411,
+        "current_std": 73389.53657449636
+      },
+      "BILL_AMT2": {
+        "drift_detected": "True",
+        "ks_statistic": 0.042291666666666665,
+        "p_value": 0.0634072320324757,
+        "reference_mean": 49781.179375,
+        "current_mean": 52056.75166666666,
+        "reference_std": 72498.09889726459,
+        "current_std": 70804.64897559432
+      },
+      "BILL_AMT3": {
+        "drift_detected": "True",
+        "ks_statistic": 0.049791666666666665,
+        "p_value": 0.016774819286271128,
+        "reference_mean": 47303.40833333333,
+        "current_mean": 50973.59416666667,
+        "reference_std": 69542.91414033316,
+        "current_std": 70188.28597646995
+      },
+      "BILL_AMT4": {
+        "drift_detected": "True",
+        "ks_statistic": 0.04125,
+        "p_value": 0.07497276580226674,
+        "reference_mean": 43677.083333333336,
+        "current_mean": 46594.7475,
+        "reference_std": 65214.604420550095,
+        "current_std": 65971.506172837
+      },
+      "BILL_AMT5": {
+        "drift_detected": "True",
+        "ks_statistic": 0.04416666666666667,
+        "p_value": 0.04640729167436804,
+        "reference_mean": 40484.135833333334,
+        "current_mean": 42841.82083333333,
+        "reference_std": 61651.20624276244,
+        "current_std": 60570.88400588833
+      },
+      "BILL_AMT6": {
+        "drift_detected": "False",
+        "ks_statistic": 0.03395833333333333,
+        "p_value": 0.2153069593111201,
+        "reference_mean": 38980.62333333334,
+        "current_mean": 40600.7075,
+        "reference_std": 60979.73110728901,
+        "current_std": 59235.363728212404
+      },
+      "PAY_AMT1": {
+        "drift_detected": "False",
+        "ks_statistic": 0.03229166666666667,
+        "p_value": 0.2660407164305731,
+        "reference_mean": 5756.652291666666,
+        "current_mean": 5146.3725,
+        "reference_std": 15099.092616890704,
+        "current_std": 10444.287119917752
+      },
+      "PAY_AMT2": {
+        "drift_detected": "False",
+        "ks_statistic": 0.03375,
+        "p_value": 0.22121391608912858,
+        "reference_mean": 5627.3377083333335,
+        "current_mean": 6297.72,
+        "reference_std": 16487.92245129961,
+        "current_std": 19757.242497056774
+      },
+      "PAY_AMT3": {
+        "drift_detected": "False",
+        "ks_statistic": 0.031875,
+        "p_value": 0.27999183205359507,
+        "reference_mean": 5186.818958333333,
+        "current_mean": 4729.831666666667,
+        "reference_std": 15577.364439538525,
+        "current_std": 11121.977724926384
+      },
+      "PAY_AMT4": {
+        "drift_detected": "False",
+        "ks_statistic": 0.034166666666666665,
+        "p_value": 0.20952114914708667,
+        "reference_mean": 4581.725416666667,
+        "current_mean": 4708.0775,
+        "reference_std": 13182.370360545476,
+        "current_std": 11121.577802655109
+      },
+      "PAY_AMT5": {
+        "drift_detected": "False",
+        "ks_statistic": 0.028541666666666667,
+        "p_value": 0.41021508230185244,
+        "reference_mean": 4851.789791666667,
+        "current_mean": 4200.546666666667,
+        "reference_std": 14785.984520717771,
+        "current_std": 9039.734919915565
+      },
+      "PAY_AMT6": {
+        "drift_detected": "False",
+        "ks_statistic": 0.03208333333333333,
+        "p_value": 0.2729518315397791,
+        "reference_mean": 5444.258333333333,
+        "current_mean": 5421.288333333333,
+        "reference_std": 18116.934786476508,
+        "current_std": 22189.337357099088
+      }
+    },
+    "drift_score": 0.027838541666666664,
+    "timestamp": "2025-10-27T15:11:34.049064"
+  },
+  "performance": {
+    "current_metrics": {
+      "accuracy": 0.815,
+      "precision": 0.6541353383458647,
+      "recall": 0.33079847908745247,
+      "f1_score": 0.4393939393939394,
+      "roc_auc": 0.7700654544274056
+    },
+    "performance_degraded": true,
+    "timestamp": "2025-10-27T15:11:34.167039"
+  },
+  "bias": {
+    "bias_detected": false,
+    "attribute_bias": {},
+    "timestamp": "2025-10-27T15:11:34.211350"
+  },
+  "overall_status": "issues_detected"
+}

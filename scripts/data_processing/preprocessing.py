@@ -227,10 +227,10 @@ def create_preprocessor(
 
 
 def split_data(
-    df: pd.DataFrame,
-    target_col: str = "target",
-    test_size: float = 0.2,
-    random_state: int = 42,
+        df: pd.DataFrame,
+        target_col: str = "target",
+        test_size: float = 0.2,
+        random_state: int = 42,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """
     Разделяет данные на обучающую и тестовую выборки.
@@ -244,7 +244,7 @@ def split_data(
     Returns:
         Tuple: (X_train, X_test, y_train, y_test)
     """
-    print(f"\nРазделение данных на train/test ({1-test_size:.1%}/{test_size:.1%})...")
+    print(f"\nРазделение данных на train/test ({1 - test_size:.1%}/{test_size:.1%})...")
 
     if target_col not in df.columns:
         raise ValueError(f"Целевая переменная '{target_col}' не найдена в данных")
@@ -252,22 +252,44 @@ def split_data(
     y = df[target_col]
     X = df.drop(columns=[target_col])
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=y
-    )
+    # Проверяем, можно ли использовать стратификацию
+    if y.nunique() >= 2:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=y
+        )
+        print("Использована стратифицированная разбивка")
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state, stratify=None
+        )
+        print("Использована обычная разбивка (только один класс в целевой переменной)")
 
     print(f"Обучающая выборка: {X_train.shape[0]} строк, {X_train.shape[1]} признаков")
     print(f"Тестовая выборка: {X_test.shape[0]} строк, {X_test.shape[1]} признаков")
 
-    # Проверяем распределение целевой переменной
-    train_dist = y_train.value_counts(normalize=True).sort_index()
-    test_dist = y_test.value_counts(normalize=True).sort_index()
+    # БЕЗОПАСНЫЙ расчет распределения целевой переменной
+    def get_safe_distribution(series):
+        """Безопасно вычисляет распределение классов"""
+        counts = series.value_counts()
+        total = len(series)
+
+        # Гарантируем наличие обоих классов в результате
+        good_pct = counts.get(0, 0) / total * 100
+        bad_pct = counts.get(1, 0) / total * 100
+
+        return good_pct, bad_pct
+
+    train_good_pct, train_bad_pct = get_safe_distribution(y_train)
+    test_good_pct, test_bad_pct = get_safe_distribution(y_test)
 
     print(f"\nРаспределение целевой переменной:")
-    print(
-        f"  Обучающая выборка: {train_dist[0]:.1%} хороших, {train_dist[1]:.1%} плохих"
-    )
-    print(f"  Тестовая выборка: {test_dist[0]:.1%} хороших, {test_dist[1]:.1%} плохих")
+    print(f"  Обучающая выборка: {train_good_pct:.1f}% хороших, {train_bad_pct:.1f}% плохих")
+    print(f"  Тестовая выборка: {test_good_pct:.1f}% хороших, {test_bad_pct:.1f}% плохих")
+
+    # Дополнительная информация о классах
+    print(f"\nДетализация классов:")
+    print(f"  Обучающая выборка: {y_train.value_counts().to_dict()}")
+    print(f"  Тестовая выборка: {y_test.value_counts().to_dict()}")
 
     return X_train, X_test, y_train, y_test
 
@@ -348,6 +370,28 @@ def main():
 
     # Загружаем данные
     df = load_processed_data(data_path)
+
+    # ПРОВЕРКА ЦЕЛЕВОЙ ПЕРЕМЕННОЙ (ДОБАВЛЕНО)
+    if "target" not in df.columns:
+        print("Ошибка: целевая переменная 'target' не найдена в данных")
+        print("Доступные столбцы:", df.columns.tolist())
+        return
+
+    target_distribution = df["target"].value_counts()
+    print(f"\nРаспределение целевой переменной в исходных данных:")
+    for class_val, count in target_distribution.items():
+        class_name = "хороших" if class_val == 0 else "плохих"
+        percentage = count / len(df) * 100
+        print(f"  Класс {class_val} ({class_name}): {count} записей ({percentage:.1f}%)")
+
+    # Если только один класс, предупреждаем пользователя
+    if len(target_distribution) == 1:
+        print("\nПРЕДУПРЕЖДЕНИЕ: В данных только один класс целевой переменной!")
+        print("Это может повлиять на качество модели.")
+        # Показываем какой именно класс присутствует
+        existing_class = target_distribution.index[0]
+        class_name = "хороших" if existing_class == 0 else "плохих"
+        print(f"Присутствует только класс {existing_class} ({class_name})")
 
     # Создаем выборку для тестирования (опционально)
     if df.shape[0] > 100000:  # Если данных много, создаем выборку

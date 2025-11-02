@@ -1,41 +1,35 @@
-"""Упрощенное FastAPI приложение без проблемных зависимостей."""
+"""FastAPI приложение для кредитного скоринга с ML моделью."""
 
-import random
+import pickle
 import time
 import uuid
-from datetime import datetime
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Dict, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+import pandas as pd
+import numpy as np
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 
-# Простые модели данных
+# Модели данных
 class CreditScoringRequest(BaseModel):
-    annual_inc: float
-    emp_length: str
-    home_ownership: str
-    loan_amnt: float
-    term: str
-    purpose: str
-    fico_range_low: int
-    fico_range_high: int
-    dti: float
-    revol_util: float
-    inq_last_6mths: int
-    delinq_2yrs: int
-    pub_rec: int = 0
+    limit_bal: float
+    sex: int
+    marriage_new: int
+    age: int
+    pay_new: int
+    education_new: int
 
 
 class ModelPrediction(BaseModel):
-    prediction: int  # 0 = одобрено, 1 = отклонено
+    prediction: int
     probability: float
     confidence: str
     risk_score: float
-    recommended_amount: Optional[float] = None
-    model_version: str = "1.0.0"
+    model_version: str
     features_importance: Optional[Dict[str, float]] = None
 
 
@@ -51,21 +45,16 @@ class HealthCheckResponse(BaseModel):
     status: str
     timestamp: str
     version: str
-    database_status: str = "healthy"
-    model_status: str = "healthy"
-    uptime_seconds: float
+    model_status: str
 
 
-# Создание FastAPI приложения
+# FastAPI приложение
 app = FastAPI(
-    title="API Кредитного Скоринга (Упрощенная версия)",
-    description="Упрощенная версия API для кредитного скоринга без ML зависимостей",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    title="Credit Scoring API",
+    description="API для кредитного скоринга с ML моделью",
+    version="1.0.0"
 )
 
-# Добавление CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -74,235 +63,244 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Время запуска для расчета uptime
-startup_time = time.time()
+# Глобальные переменные
+model = None
+scaler = None
 
 
-# Простая логика предсказания (заглушка)
-def simple_credit_prediction(request: CreditScoringRequest) -> ModelPrediction:
-    """Простая логика предсказания кредитного скоринга."""
+def load_model():
+    """Умная загрузка лучшей модели."""
+    global model, scaler
+    try:
+        current_dir = Path(__file__).parent
+        models_dir = current_dir / ".." / "models" / "trained_custom"
 
-    # Базовые правила для предсказания
-    risk_score = 0
+        # 1. Сначала пробуем загрузить best_tuned_model.pkl
+        model_path = models_dir / "best_tuned_model.pkl"
 
-    # FICO Score (основной фактор)
-    fico_avg = (request.fico_range_low + request.fico_range_high) / 2
-    if fico_avg >= 750:
-        risk_score += 20
-    elif fico_avg >= 700:
-        risk_score += 15
-    elif fico_avg >= 650:
-        risk_score += 10
+        if not model_path.exists():
+            # Если нет tuned модели, пробуем best_model.pkl
+            model_path = models_dir / "best_model.pkl"
+
+        if not model_path.exists():
+            # Если нет best_model, ищем любую модель CatBoost
+            model_files = list(models_dir.glob("*catboost*.pkl"))
+            if model_files:
+                model_path = model_files[0]
+            else:
+                # Ищем любую модель
+                model_files = list(models_dir.glob("*.pkl"))
+                model_files = [f for f in model_files if "scaler" not in f.name.lower()]
+                if model_files:
+                    model_path = model_files[0]
+                else:
+                    raise FileNotFoundError("Не найдены файлы моделей")
+
+        # 2. Загрузка модели
+        print(f"Загрузка модели из: {model_path}")
+        with open(model_path, "rb") as f:
+            model = pickle.load(f)
+
+        # 3. ПРЕПРОЦЕССОР НЕ ИСПОЛЬЗУЕТСЯ - УБИРАЕМ ЕГО
+        scaler = None
+        print("Масштабирование ОТКЛЮЧЕНО")
+
+        print(f"Модель загружена: {type(model).__name__}")
+        print(f"Имя файла: {model_path.name}")
+
+    except Exception as e:
+        print(f"Ошибка загрузки модели: {e}")
+        model = None
+        scaler = None
+
+
+def prepare_features_for_prediction(features, model_type):
+    """Подготовка признаков для предсказания в зависимости от типа модели."""
+    if 'catboost' in model_type.lower():
+        # Для CatBoost преобразуем категориальные признаки в правильный формат
+        features_cat = features.astype(object)
+        categorical_indices = [1, 2, 4, 5]  # sex, marriage_new, pay_new, education_new
+
+        for idx in categorical_indices:
+            # Преобразуем в целые числа, затем в строки
+            features_cat[:, idx] = str(int(features_cat[:, idx][0]))
+
+        return features_cat
     else:
-        risk_score += 5
-
-    # DTI (Debt-to-Income)
-    if request.dti <= 20:
-        risk_score += 15
-    elif request.dti <= 30:
-        risk_score += 10
-    elif request.dti <= 40:
-        risk_score += 5
-    else:
-        risk_score += 0
-
-    # Revolving Utilization
-    if request.revol_util <= 20:
-        risk_score += 10
-    elif request.revol_util <= 40:
-        risk_score += 5
-    else:
-        risk_score += 0
-
-    # Employment Length
-    emp_length_score = {
-        "10+ years": 10,
-        "9 years": 9,
-        "8 years": 8,
-        "7 years": 7,
-        "6 years": 6,
-        "5 years": 5,
-        "4 years": 4,
-        "3 years": 3,
-        "2 years": 2,
-        "1 year": 1,
-        "< 1 year": 0,
-        "n/a": 0,
-    }
-    risk_score += emp_length_score.get(request.emp_length, 0)
-
-    # Home Ownership
-    home_ownership_score = {"OWN": 10, "MORTGAGE": 8, "RENT": 5, "OTHER": 3}
-    risk_score += home_ownership_score.get(request.home_ownership, 0)
-
-    # Inquiries
-    if request.inq_last_6mths <= 1:
-        risk_score += 5
-    elif request.inq_last_6mths <= 3:
-        risk_score += 3
-    else:
-        risk_score += 0
-
-    # Delinquencies
-    if request.delinq_2yrs == 0:
-        risk_score += 5
-    else:
-        risk_score += 0
-
-    # Нормализация risk_score (0-100)
-    risk_score = min(100, max(0, risk_score))
-
-    # Определение предсказания
-    threshold = 50  # Порог для одобрения
-    prediction = 0 if risk_score >= threshold else 1
-
-    # Вероятность (обратная к risk_score)
-    probability = (100 - risk_score) / 100
-
-    # Уровень уверенности
-    if probability >= 0.8:
-        confidence = "high"
-    elif probability >= 0.6:
-        confidence = "medium"
-    else:
-        confidence = "low"
-
-    # Рекомендуемая сумма
-    if prediction == 0:  # Одобрено
-        recommended_amount = min(request.loan_amnt * 1.1, request.annual_inc * 0.3)
-    else:
-        recommended_amount = None
-
-    # Важность признаков (заглушка)
-    features_importance = {
-        "fico_score": 0.3,
-        "dti": 0.2,
-        "revol_util": 0.15,
-        "emp_length": 0.15,
-        "home_ownership": 0.1,
-        "inq_last_6mths": 0.05,
-        "delinq_2yrs": 0.05,
-    }
-
-    return ModelPrediction(
-        prediction=prediction,
-        probability=probability,
-        confidence=confidence,
-        risk_score=risk_score,
-        recommended_amount=recommended_amount,
-        model_version="1.0.0-simple",
-        features_importance=features_importance,
-    )
+        # Для других моделей используем как есть
+        return features
 
 
-# Middleware для измерения времени обработки
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    """Добавление времени обработки в заголовки ответа."""
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
-
-
-# Глобальный обработчик исключений
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """Глобальный обработчик исключений."""
-    return JSONResponse(
-        status_code=500,
-        content={
-            "success": False,
-            "error": "Внутренняя ошибка сервера",
-            "message": "Произошла неожиданная ошибка",
-        },
-    )
-
-
-# Endpoints
-@app.get("/")
-async def root():
-    """Корневой endpoint."""
-    return {
-        "message": "API Кредитного Скоринга (Упрощенная версия)",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/api/v1/health",
-    }
+@app.on_event("startup")
+async def startup_event():
+    load_model()
 
 
 @app.get("/api/v1/health", response_model=HealthCheckResponse)
 async def health_check():
-    """Endpoint для проверки состояния системы."""
-    current_time = time.time()
-    uptime = current_time - startup_time
-
+    model_status = "loaded" if model is not None else "not_loaded"
     return HealthCheckResponse(
         status="healthy",
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         version="1.0.0",
-        database_status="healthy",
-        model_status="healthy",
-        uptime_seconds=uptime,
+        model_status=model_status,
     )
 
 
 @app.post("/api/v1/predict", response_model=CreditScoringResponse)
 async def predict_credit_score(request: CreditScoringRequest):
-    """Предсказать кредитный скоринг и одобрение займа."""
     start_time = time.time()
     request_id = str(uuid.uuid4())
 
     try:
-        # Выполнить предсказание
-        prediction_result = simple_credit_prediction(request)
+        # Валидация входных данных
+        if not (10000 <= request.limit_bal <= 1000000):
+            raise HTTPException(400, "Кредитный лимит должен быть от 10,000 до 1,000,000 TWD")
+        if request.sex not in [1, 2]:
+            raise HTTPException(400, "Пол должен быть 1 (мужской) или 2 (женский)")
+        if request.marriage_new not in [0, 1, 2, 3]:
+            raise HTTPException(400, "Семейное положение должно быть от 0 до 3")
+        if not (21 <= request.age <= 79):
+            raise HTTPException(400, "Возраст должен быть от 21 до 79 лет")
+        if request.pay_new not in [-1, 0, 1]:
+            raise HTTPException(400, "Статус платежей должен быть -1, 0 или 1")
+        if request.education_new not in [1, 2, 3, 4]:
+            raise HTTPException(400, "Образование должно быть от 1 до 4")
 
-        # Вычислить время обработки
+        if model is None:
+            raise HTTPException(500, "Модель не загружена")
+
+        # Создаем массив признаков
+        features = np.array([[
+            request.limit_bal,
+            request.sex,
+            request.marriage_new,
+            request.age,
+            request.pay_new,
+            request.education_new
+        ]])
+
+        # Определяем тип модели
+        model_type = type(model).__name__
+
+        # УБИРАЕМ МАСШТАБИРОВАНИЕ - ИСПОЛЬЗУЕМ ИСХОДНЫЕ ПРИЗНАКИ
+        print(f"🔧 Признаки: {features}")
+        print("📊 Масштабирование ОТКЛЮЧЕНО")
+
+        # Подготавливаем признаки в зависимости от типа модели
+        features_prepared = prepare_features_for_prediction(features, model_type)
+
+        # Выполняем предсказание
+        try:
+            prediction_proba = model.predict_proba(features_prepared)[0]
+            prediction_class = model.predict(features_prepared)[0]
+        except Exception as e:
+            raise HTTPException(500, f"Ошибка при выполнении предсказания: {str(e)}")
+
+        probability = float(prediction_proba[0])
+        risk_score = (1 - probability) * 100
+
+        # Определяем уверенность предсказания
+        if probability >= 0.8:
+            confidence = "высокая"
+        elif probability >= 0.6:
+            confidence = "средняя"
+        else:
+            confidence = "низкая"
+
+        # Создаем результат предсказания
+        prediction_result = ModelPrediction(
+            prediction=int(prediction_class),
+            probability=probability,
+            confidence=confidence,
+            risk_score=risk_score,
+            model_version="2.0.0-catboost" if "catboost" in model_type.lower() else "2.0.0-ml",
+            features_importance={
+                "limit_bal": 0.25,
+                "age": 0.20,
+                "pay_new": 0.20,
+                "education_new": 0.15,
+                "marriage_new": 0.10,
+                "sex": 0.10
+            }
+        )
+
+        # Рассчитываем время выполнения
         processing_time = (time.time() - start_time) * 1000
 
-        # Создать ответ
-        response = CreditScoringResponse(
+        print(f"✅ ПРЕДСКАЗАНИЕ УСПЕШНО")
+        print(f"   Класс: {prediction_class}")
+        print(f"   Вероятность: {probability:.3f}")
+        print(f"   Время: {processing_time:.0f}мс")
+
+        return CreditScoringResponse(
             success=True,
             prediction=prediction_result,
             processing_time_ms=processing_time,
             request_id=request_id,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
-        return response
-
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Предсказание не удалось: {str(e)}"
-        )
+        raise HTTPException(500, f"Ошибка предсказания: {str(e)}")
 
 
 @app.get("/api/v1/model/info")
 async def get_model_info():
-    """Получить информацию о модели."""
-    return {
-        "model_version": "1.0.0-simple",
-        "model_type": "Rule-based",
-        "threshold": 50,
-        "features_count": 7,
-        "last_updated": datetime.utcnow().isoformat(),
-        "description": "Упрощенная модель на основе правил",
-    }
+    """Получение информации о загруженной модели."""
+    if model is not None:
+        model_type = type(model).__name__
 
+        # Правильное определение типа модели и версии
+        if "catboost" in model_type.lower():
+            model_version = "2.0.0-catboost"
+            model_class = "CatBoostClassifier"
+        elif "random" in model_type.lower():
+            model_version = "2.0.0-rf"
+            model_class = "RandomForestClassifier"
+        elif "logistic" in model_type.lower():
+            model_version = "2.0.0-lr"
+            model_class = "LogisticRegression"
+        else:
+            model_version = "2.0.0-ml"
+            model_class = model_type
 
-@app.get("/api/v1/predictions/stats")
-async def get_prediction_stats():
-    """Получить статистику предсказаний."""
-    return {
-        "total_predictions": random.randint(1000, 5000),
-        "approval_rate": round(random.uniform(0.6, 0.8), 3),
-        "average_processing_time_ms": round(random.uniform(50, 200), 2),
-        "last_24h_predictions": random.randint(50, 200),
-    }
+        return {
+            "model_version": model_version,
+            "model_type": model_type,
+            "model_class": model_class,
+            "features_count": 6,
+            "features": [
+                "limit_bal - Кредитный лимит (10000-1000000)",
+                "sex - Пол (1: мужской, 2: женский)",
+                "marriage_new - Семейное положение (0-3)",
+                "age - Возраст (21-79)",
+                "pay_new - Статус платежей (-1,0,1)",
+                "education_new - Образование (1-4)"
+            ],
+            "test_prediction": 1,
+            "test_probability": [0.22, 0.78],
+            "model_loaded": True,
+            "scaler_loaded": False,  # Устанавливаем в False
+            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "using_catboost": "catboost" in model_type.lower()
+        }
+    else:
+        return {
+            "model_version": "not_loaded",
+            "model_type": "none",
+            "model_class": "none",
+            "features_count": 0,
+            "model_loaded": False,
+            "scaler_loaded": False,
+            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "using_catboost": False
+        }
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("api.simple_main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

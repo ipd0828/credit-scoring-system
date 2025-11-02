@@ -16,10 +16,9 @@ from typing import Any, Dict, Tuple
 import joblib
 
 # Импорты для визуализации
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -256,16 +255,21 @@ def train_and_evaluate_models(
 
 
 def create_comparison_plot(
-    results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
+        results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
 ) -> None:
     """
-    Создает график сравнения моделей.
+    Создает график сравнения моделей без Tkinter.
 
     Args:
         results: Результаты обучения
         output_dir: Папка для сохранения
     """
     print("\nСоздание графика сравнения моделей...")
+
+    # Используем неинтерактивный бэкенд ДО импорта matplotlib
+    import matplotlib
+    matplotlib.use('Agg')  # Важно: использовать Agg бэкенд
+    import matplotlib.pyplot as plt
 
     # Подготавливаем данные для графика
     model_names = []
@@ -276,41 +280,44 @@ def create_comparison_plot(
         if "error" not in model_results:
             model_names.append(model_name)
             for metric in metrics:
-                metric_values[metric].append(model_results[metric])
+                metric_values[metric].append(model_results.get(metric, 0))
 
-    # Создаем график
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-    axes = axes.flatten()
+    if not model_names:
+        print("Нет данных для построения графика")
+        return
 
-    for i, metric in enumerate(metrics):
-        ax = axes[i]
-        bars = ax.bar(model_names, metric_values[metric])
-        ax.set_title(f"{metric.upper()}")
-        ax.set_ylabel("Score")
-        ax.tick_params(axis="x", rotation=45)
+    try:
+        # Создаем упрощенный график вместо 6 subplots
+        fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+
+        # Собираем данные для bar plot (используем только accuracy для простоты)
+        accuracy_scores = metric_values["accuracy"]
+
+        # Создаем bar plot
+        bars = ax.bar(model_names, accuracy_scores, color=['skyblue', 'lightcoral'])
+        ax.set_ylabel('Accuracy')
+        ax.set_title('Сравнение точности моделей')
+        ax.set_ylim(0, 1)
 
         # Добавляем значения на столбцы
-        for bar, value in zip(bars, metric_values[metric]):
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.01,
-                f"{value:.3f}",
-                ha="center",
-                va="bottom",
-            )
+        for bar, score in zip(bars, accuracy_scores):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.01,
+                    f'{score:.3f}', ha='center', va='bottom')
 
-    # Удаляем лишний subplot
-    axes[5].remove()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
 
-    plt.tight_layout()
+        # Сохраняем график
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path / "model_comparison.png", dpi=300, bbox_inches="tight")
+        plt.close()  # Закрываем график вместо показа
 
-    # Сохраняем график
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path / "model_comparison.png", dpi=300, bbox_inches="tight")
-    plt.show()
+        print(f"График сохранен: {output_path / 'model_comparison.png'}")
 
-    print(f"График сохранен: {output_path / 'model_comparison.png'}")
+    except Exception as e:
+        print(f"Ошибка при создании графика сравнения: {e}")
 
 
 def create_roc_curves(
@@ -319,7 +326,7 @@ def create_roc_curves(
     output_dir: str = "models/artifacts",
 ) -> None:
     """
-    Создает ROC-кривые для всех моделей.
+    Создает ROC-кривые для всех моделей без Tkinter.
 
     Args:
         probabilities: Словарь с вероятностями предсказаний
@@ -328,30 +335,45 @@ def create_roc_curves(
     """
     print("\nСоздание ROC-кривых...")
 
-    plt.figure(figsize=(10, 8))
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_curve, auc
 
-    for name, y_proba in probabilities.items():
-        fpr, tpr, _ = roc_curve(y_test, y_proba)
-        auc = roc_auc_score(y_test, y_proba)
-        plt.plot(fpr, tpr, label=f"{name} (AUC = {auc:.3f})")
+    if not probabilities:
+        print("Нет вероятностей для построения ROC-кривых")
+        return
 
-    # Диагональ — случайный классификатор
-    plt.plot([0, 1], [0, 1], "k--", label="Случайный классификатор")
+    try:
+        plt.figure(figsize=(10, 8))
 
-    # Оформление
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC-кривые: Сравнение моделей")
-    plt.legend(loc="lower right")
-    plt.grid(True, alpha=0.3)
+        for name, y_proba in probabilities.items():
+            if y_proba is not None and len(y_proba) == len(y_test):
+                fpr, tpr, _ = roc_curve(y_test, y_proba)
+                roc_auc = auc(fpr, tpr)
+                plt.plot(fpr, tpr, label=f"{name} (AUC = {roc_auc:.3f})")
 
-    # Сохраняем график
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    plt.savefig(output_path / "roc_curves.png", dpi=300, bbox_inches="tight")
-    plt.show()
+        # Диагональ — случайный классификатор
+        plt.plot([0, 1], [0, 1], "k--", label="Случайный классификатор")
 
-    print(f"ROC-кривые сохранены: {output_path / 'roc_curves.png'}")
+        # Оформление
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("ROC-кривые: Сравнение моделей")
+        plt.legend(loc="lower right")
+        plt.grid(True, alpha=0.3)
+
+        # Сохраняем график
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path / "roc_curves.png", dpi=300, bbox_inches="tight")
+        plt.close()  # Закрываем график вместо показа
+
+        print(f"ROC-кривые сохранены: {output_path / 'roc_curves.png'}")
+
+    except Exception as e:
+        print(f"Ошибка при создании ROC-кривых: {e}")
 
 
 def save_models(
@@ -430,6 +452,10 @@ def print_final_results(results: Dict[str, Dict[str, Any]]) -> None:
 
 def main():
     """Основная функция для запуска обучения моделей."""
+    # Создаем папки для артефактов
+    Path("models/artifacts").mkdir(parents=True, exist_ok=True)
+    Path("models/trained").mkdir(parents=True, exist_ok=True)
+
     # Загружаем данные
     X_train, X_test, y_train, y_test, preprocessor = load_processed_data()
 

@@ -237,137 +237,179 @@ def create_validation_plots(
 
 
 def create_metrics_comparison_plot(
-    validation_results: List[Dict[str, Any]], output_path: Path
+        validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
-    """Создает график сравнения метрик."""
+    """Создает график сравнения метрик без Tkinter."""
     print("  Создание графика сравнения метрик...")
 
-    # Подготавливаем данные
-    model_names = [r["model_name"] for r in validation_results]
-    metrics = ["accuracy", "precision", "recall", "f1", "roc_auc"]
-    metric_values = {metric: [] for metric in metrics}
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
-    for result in validation_results:
-        for metric in metrics:
-            metric_values[metric].append(result["metrics"][metric])
+    try:
+        # Подготавливаем данные
+        model_names = [r["model_name"] for r in validation_results]
+        metrics = ["accuracy", "precision", "recall", "f1", "roc_auc"]
+        metric_values = {metric: [] for metric in metrics}
 
-    # Создаем график
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    axes = axes.flatten()
+        for result in validation_results:
+            for metric in metrics:
+                metric_values[metric].append(result["metrics"][metric])
 
-    for i, metric in enumerate(metrics):
-        ax = axes[i]
-        bars = ax.bar(model_names, metric_values[metric])
-        ax.set_title(f"{metric.upper()}")
-        ax.set_ylabel("Score")
-        ax.tick_params(axis="x", rotation=45)
+        # Создаем упрощенный график
+        fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+
+        # Используем только ROC-AUC для сравнения
+        roc_auc_scores = metric_values['roc_auc']
+
+        # Создаем bar plot
+        colors = ['skyblue', 'lightcoral', 'lightgreen', 'gold', 'lightpink', 'lightcyan']
+        bars = ax.bar(model_names, roc_auc_scores, color=colors[:len(model_names)])
+        ax.set_ylabel('ROC-AUC Score')
+        ax.set_title('Сравнение ROC-AUC моделей')
+        ax.set_ylim(0, 1)
 
         # Добавляем значения на столбцы
-        for bar, value in zip(bars, metric_values[metric]):
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.01,
-                f"{value:.3f}",
-                ha="center",
-                va="bottom",
-            )
+        for bar, score in zip(bars, roc_auc_scores):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.01,
+                    f'{score:.4f}', ha='center', va='bottom', fontsize=9)
 
-    # Удаляем лишний subplot
-    axes[5].remove()
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
 
-    plt.suptitle("Сравнение метрик валидации", fontsize=16)
-    plt.tight_layout()
+        plot_path = output_path / "validation_metrics_comparison.png"
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+        plt.close()
 
-    plot_path = output_path / "validation_metrics_comparison.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.show()
+        print(f"    График сохранен: {plot_path}")
 
-    print(f"    График сохранен: {plot_path}")
+    except Exception as e:
+        print(f"    Ошибка при создании графика сравнения метрик: {e}")
 
 
 def create_roc_curves_plot(
-    validation_results: List[Dict[str, Any]], output_path: Path
+        validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
-    """Создает график ROC кривых."""
+    """Создает график ROC кривых без Tkinter."""
     print("  Создание ROC кривых...")
 
-    plt.figure(figsize=(10, 8))
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import auc
 
-    for result in validation_results:
-        fpr, tpr, _ = result["roc_curve"]
-        auc = result["metrics"]["roc_auc"]
-        plt.plot(fpr, tpr, label=f"{result['model_name']} (AUC = {auc:.3f})")
+    try:
+        plt.figure(figsize=(10, 8))
 
-    # Диагональ — случайный классификатор
-    plt.plot([0, 1], [0, 1], "k--", label="Случайный классификатор")
+        for result in validation_results:
+            fpr, tpr, _ = result["roc_curve"]
+            roc_auc = result["metrics"]["roc_auc"]
+            plt.plot(fpr, tpr, label=f"{result['model_name']} (AUC = {roc_auc:.3f})")
 
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC-кривые: Сравнение моделей")
-    plt.legend(loc="lower right")
-    plt.grid(True, alpha=0.3)
+        # Диагональ — случайный классификатор
+        plt.plot([0, 1], [0, 1], "k--", label="Случайный классификатор")
 
-    plot_path = output_path / "validation_roc_curves.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.show()
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("ROC-кривые: Сравнение моделей")
+        plt.legend(loc="lower right")
+        plt.grid(True, alpha=0.3)
 
-    print(f"    ROC кривые сохранены: {plot_path}")
+        plot_path = output_path / "validation_roc_curves.png"
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        print(f"    ROC кривые сохранены: {plot_path}")
+
+    except Exception as e:
+        print(f"    Ошибка при создании ROC кривых: {e}")
 
 
 def create_pr_curves_plot(
-    validation_results: List[Dict[str, Any]], output_path: Path
+        validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
-    """Создает график Precision-Recall кривых."""
+    """Создает график Precision-Recall кривых без Tkinter."""
     print("  Создание Precision-Recall кривых...")
 
-    plt.figure(figsize=(10, 8))
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
-    for result in validation_results:
-        precision, recall, _ = result["pr_curve"]
-        ap = result["metrics"]["average_precision"]
-        plt.plot(recall, precision, label=f"{result['model_name']} (AP = {ap:.3f})")
+    try:
+        plt.figure(figsize=(10, 8))
 
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.title("Precision-Recall кривые: Сравнение моделей")
-    plt.legend(loc="lower left")
-    plt.grid(True, alpha=0.3)
+        for result in validation_results:
+            precision, recall, _ = result["pr_curve"]
+            ap = result["metrics"]["average_precision"]
+            plt.plot(recall, precision, label=f"{result['model_name']} (AP = {ap:.3f})")
 
-    plot_path = output_path / "validation_pr_curves.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.show()
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.title("Precision-Recall кривые: Сравнение моделей")
+        plt.legend(loc="lower left")
+        plt.grid(True, alpha=0.3)
 
-    print(f"    PR кривые сохранены: {plot_path}")
+        plot_path = output_path / "validation_pr_curves.png"
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        print(f"    PR кривые сохранены: {plot_path}")
+
+    except Exception as e:
+        print(f"    Ошибка при создании PR кривых: {e}")
 
 
 def create_confusion_matrices_plot(
-    validation_results: List[Dict[str, Any]], output_path: Path
+        validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
-    """Создает график матриц ошибок."""
+    """Создает график матриц ошибок без Tkinter."""
     print("  Создание матриц ошибок...")
 
-    n_models = len(validation_results)
-    fig, axes = plt.subplots(1, n_models, figsize=(5 * n_models, 4))
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import seaborn as sns
 
-    if n_models == 1:
-        axes = [axes]
+    try:
+        n_models = len(validation_results)
 
-    for i, result in enumerate(validation_results):
-        cm = result["confusion_matrix"]
+        # Для 1-2 моделей создаем горизонтальное расположение, для большего - вертикальное
+        if n_models <= 2:
+            fig, axes = plt.subplots(1, n_models, figsize=(5 * n_models, 4))
+        else:
+            fig, axes = plt.subplots(n_models, 1, figsize=(6, 4 * n_models))
 
-        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=axes[i])
-        axes[i].set_title(f"{result['model_name']}")
-        axes[i].set_xlabel("Предсказанный класс")
-        axes[i].set_ylabel("Истинный класс")
+        if n_models == 1:
+            axes = [axes]
 
-    plt.suptitle("Матрицы ошибок", fontsize=16)
-    plt.tight_layout()
+        for i, result in enumerate(validation_results):
+            cm = result["confusion_matrix"]
 
-    plot_path = output_path / "validation_confusion_matrices.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.show()
+            if n_models <= 2:
+                ax = axes[i]
+            else:
+                ax = axes[i]
 
-    print(f"    Матрицы ошибок сохранены: {plot_path}")
+            sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+            ax.set_title(f"{result['model_name']}")
+            ax.set_xlabel("Предсказанный класс")
+            ax.set_ylabel("Истинный класс")
+
+        plt.tight_layout()
+
+        plot_path = output_path / "validation_confusion_matrices.png"
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        print(f"    Матрицы ошибок сохранены: {plot_path}")
+
+    except Exception as e:
+        print(f"    Ошибка при создании матриц ошибок: {e}")
 
 
 def generate_validation_report(
@@ -505,8 +547,292 @@ def print_validation_summary(validation_results: List[Dict[str, Any]]) -> None:
     print(f"  F1-score: {best_model['F1-score']}")
 
 
+def create_data_validation_suite():
+    """
+    Создает набор ожиданий (expectations) для валидации данных кредитного скоринга.
+    """
+    try:
+        import great_expectations as gx
+        from great_expectations.core.expectation_configuration import ExpectationConfiguration
+
+        print("\nСоздание набора валидации данных Great Expectations...")
+
+        # Создаем файловый контекст вместо ephemeral
+        context = gx.get_context(mode="file")
+
+        # Создание набора ожиданий
+        expectation_suite_name = "credit_scoring_data_suite"
+
+        # Удаляем существующий набор, если есть
+        try:
+            context.delete_expectation_suite(expectation_suite_name)
+            print(f"Удален существующий набор '{expectation_suite_name}'")
+        except:
+            pass  # Набора не существует, это нормально
+
+        # Создаем новый набор
+        suite = context.add_expectation_suite(expectation_suite_name)
+        print(f"Создан новый набор '{expectation_suite_name}'")
+
+        # Определение ожиданий для данных
+        expectations = [
+            # Базовые проверки существования колонок
+            ExpectationConfiguration(
+                expectation_type="expect_column_to_exist",
+                kwargs={"column": "LIMIT_BAL"}
+            ),
+            ExpectationConfiguration(
+                expectation_type="expect_column_to_exist",
+                kwargs={"column": "AGE"}
+            ),
+            ExpectationConfiguration(
+                expectation_type="expect_column_to_exist",
+                kwargs={"column": "target"}
+            ),
+
+            # Проверки на отсутствие NULL значений в ключевых колонках
+            ExpectationConfiguration(
+                expectation_type="expect_column_values_to_not_be_null",
+                kwargs={"column": "LIMIT_BAL"}
+            ),
+            ExpectationConfiguration(
+                expectation_type="expect_column_values_to_not_be_null",
+                kwargs={"column": "target"}
+            ),
+
+            # Проверки диапазонов значений
+            ExpectationConfiguration(
+                expectation_type="expect_column_values_to_be_between",
+                kwargs={"column": "AGE", "min_value": 18, "max_value": 100}
+            ),
+            ExpectationConfiguration(
+                expectation_type="expect_column_values_to_be_between",
+                kwargs={"column": "LIMIT_BAL", "min_value": 0, "max_value": 1000000}
+            ),
+
+            # Проверки категориальных значений
+            ExpectationConfiguration(
+                expectation_type="expect_column_values_to_be_in_set",
+                kwargs={"column": "target", "value_set": [0, 1]}
+            ),
+            ExpectationConfiguration(
+                expectation_type="expect_column_values_to_be_in_set",
+                kwargs={"column": "SEX", "value_set": [1, 2]}
+            ),
+
+            # Дополнительные проверки для надежности
+            ExpectationConfiguration(
+                expectation_type="expect_table_row_count_to_be_between",
+                kwargs={"min_value": 1, "max_value": 1000000}
+            )
+        ]
+
+        # Добавление ожиданий в набор
+        for exp in expectations:
+            suite.add_expectation(exp, send_usage_event=False)
+
+        # Сохранение набора
+        context.save_expectation_suite(suite)
+
+        # Проверяем, что набор действительно сохранен
+        saved_suite = context.get_expectation_suite(expectation_suite_name)
+        print(f"Проверка: набор '{expectation_suite_name}' успешно сохранен")
+        print(f"Количество ожиданий в наборе: {len(saved_suite.expectations)}")
+
+        print("OK Набор валидации данных создан успешно!")
+        return saved_suite
+
+    except ImportError:
+        print("ERROR: Great Expectations не установлен!")
+        print("Установите: pip install great-expectations")
+        raise
+    except Exception as e:
+        print(f"ERROR: Ошибка при создании набора валидации: {e}")
+        raise
+
+
+def validate_data_quality(df: pd.DataFrame, suite_name: str = "credit_scoring_data_suite"):
+    """
+    Выполняет валидацию качества данных с помощью Great Expectations.
+    """
+    try:
+        import great_expectations as gx
+        from great_expectations.core.expectation_configuration import ExpectationConfiguration
+
+        print(f"\nВалидация качества данных с помощью {suite_name}...")
+
+        # Используем файловый контекст
+        context = gx.get_context(mode="file")
+
+        # Создаем набор ожиданий непосредственно перед валидацией
+        try:
+            context.delete_expectation_suite(suite_name)
+        except:
+            pass
+
+        suite = context.add_expectation_suite(suite_name)
+
+        # Определение ожиданий для данных
+        expectations = [
+            ExpectationConfiguration("expect_column_to_exist", {"column": "LIMIT_BAL"}),
+            ExpectationConfiguration("expect_column_to_exist", {"column": "AGE"}),
+            ExpectationConfiguration("expect_column_to_exist", {"column": "target"}),
+            ExpectationConfiguration("expect_column_values_to_not_be_null", {"column": "LIMIT_BAL"}),
+            ExpectationConfiguration("expect_column_values_to_not_be_null", {"column": "target"}),
+            ExpectationConfiguration("expect_column_values_to_be_between",
+                                     {"column": "AGE", "min_value": 18, "max_value": 100}),
+            ExpectationConfiguration("expect_column_values_to_be_between",
+                                     {"column": "LIMIT_BAL", "min_value": 0, "max_value": 1000000}),
+            ExpectationConfiguration("expect_column_values_to_be_in_set", {"column": "target", "value_set": [0, 1]}),
+            ExpectationConfiguration("expect_column_values_to_be_in_set", {"column": "SEX", "value_set": [1, 2]}),
+        ]
+
+        for exp in expectations:
+            suite.add_expectation(exp, send_usage_event=False)
+
+        context.save_expectation_suite(suite)
+        print(f"Создан набор валидации с {len(expectations)} ожиданиями")
+
+        # Создаем временный datasource
+        datasource_name = "temp_pandas_datasource"
+
+        # Удаляем существующий datasource если есть
+        try:
+            context.delete_datasource(datasource_name)
+        except:
+            pass
+
+        # Создаем новый datasource
+        datasource = context.sources.add_pandas(datasource_name)
+
+        # Создаем data asset
+        data_asset_name = "temp_dataframe_asset"
+        data_asset = datasource.add_dataframe_asset(data_asset_name)
+
+        # Создаем batch request
+        batch_request = data_asset.build_batch_request(dataframe=df)
+
+        # Создаем валидатор
+        validator = context.get_validator(
+            batch_request=batch_request,
+            expectation_suite_name=suite_name,
+        )
+
+        # Выполнение валидации
+        validation_result = validator.validate()
+
+        # Анализ результатов
+        success = validation_result.success
+        statistics = validation_result.statistics
+
+        print(f"Результаты валидации:")
+        print(f"  Успешно: {success}")
+        print(f"  Всего проверок: {statistics.get('evaluated_expectations', 0)}")
+        print(f"  Успешных: {statistics.get('successful_expectations', 0)}")
+        print(f"  Неудачных: {statistics.get('unsuccessful_expectations', 0)}")
+
+        if not success:
+            print("\nWARNING: Обнаружены проблемы с данными:")
+            unsuccessful_count = 0
+            for result in validation_result.results:
+                if not result.success:
+                    unsuccessful_count += 1
+                    exp_type = result.expectation_config.expectation_type
+                    column = result.expectation_config.kwargs.get('column', 'N/A')
+                    print(f"  {unsuccessful_count}. {exp_type} (колонка: {column})")
+        else:
+            # Используем ASCII символ вместо Unicode для совместимости с кодировками
+            print("  Все проверки данных пройдены успешно!")
+
+        # Очищаем временный datasource
+        try:
+            context.delete_datasource(datasource_name)
+        except:
+            pass
+
+        return validation_result
+
+    except ImportError:
+        print("ERROR: Great Expectations не установлен!")
+        print("Установите: pip install great-expectations")
+        raise
+    except Exception as e:
+        print(f"ERROR: Ошибка при валидации данных: {e}")
+        raise
+
+
+def generate_data_quality_report(validation_results, output_dir: str = "models/artifacts"):
+    """
+    Генерирует отчет о качестве данных.
+    """
+    if not validation_results:
+        return
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    report_data = {
+        "validation_success": validation_results.success,
+        "total_expectations": validation_results.statistics.get("evaluated_expectations", 0),
+        "successful_expectations": validation_results.statistics.get("successful_expectations", 0),
+        "unsuccessful_expectations": validation_results.statistics.get("unsuccessful_expectations", 0),
+        "failed_checks": []
+    }
+
+    # Собираем информацию о неудачных проверках
+    if hasattr(validation_results, 'results'):
+        for result in validation_results.results:
+            if not result.success:
+                failed_check = {
+                    "expectation_type": result.expectation_config.expectation_type,
+                    "column": result.expectation_config.kwargs.get("column", "N/A"),
+                    "message": str(getattr(result, 'exception_info', {}).get('exception_message', 'N/A'))
+                }
+                report_data["failed_checks"].append(failed_check)
+
+    # Сохраняем отчет
+    report_df = pd.DataFrame([report_data])
+    report_path = output_path / "data_quality_report.csv"
+
+    try:
+        report_df.to_csv(report_path, index=False, encoding='utf-8')
+        print(f"  CSV отчет сохранен: {report_path}")
+    except Exception as e:
+        print(f"  Ошибка при сохранении CSV отчета: {e}")
+        # Пробуем сохранить без проблемных символов
+        report_df.to_csv(report_path, index=False, encoding='utf-8', errors='ignore')
+
+    # Создаем текстовый отчет с правильной кодировкой
+    text_report_path = output_path / "data_quality_report.txt"
+    try:
+        with open(text_report_path, "w", encoding='utf-8') as f:
+            f.write("ОТЧЕТ О КАЧЕСТВЕ ДАННЫХ\n")
+            f.write("=" * 50 + "\n\n")
+
+            f.write(f"Результат валидации: {'УСПЕШНО' if report_data['validation_success'] else 'НЕУДАЧА'}\n")
+            f.write(f"Всего проверок: {report_data['total_expectations']}\n")
+            f.write(f"Успешных: {report_data['successful_expectations']}\n")
+            f.write(f"Неудачных: {report_data['unsuccessful_expectations']}\n\n")
+
+            if report_data['failed_checks']:
+                f.write("НЕУДАЧНЫЕ ПРОВЕРКИ:\n")
+                f.write("-" * 30 + "\n")
+                for i, check in enumerate(report_data['failed_checks'], 1):
+                    f.write(f"{i}. Тип проверки: {check['expectation_type']}\n")
+                    f.write(f"   Колонка: {check['column']}\n")
+                    f.write(f"   Сообщение: {check['message']}\n\n")
+
+        print(f"  TXT отчет сохранен: {text_report_path}")
+    except Exception as e:
+        print(f"  Ошибка при сохранении TXT отчета: {e}")
+
+
 def main():
     """Основная функция для запуска валидации моделей."""
+    # Создаем папки для артефактов
+    Path("models/artifacts").mkdir(parents=True, exist_ok=True)
+    Path("models/validation").mkdir(parents=True, exist_ok=True)
+
     # Загружаем модели и данные
     models, X_train, X_test, y_train, y_test = load_models_and_data()
 
@@ -514,7 +840,42 @@ def main():
         print("Не найдено моделей для валидации")
         return
 
-    # Валидируем каждую модель
+    # Валидация качества данных с помощью Great Expectations (обязательная)
+    print("\n=== ВАЛИДАЦИЯ КАЧЕСТВА ДАННЫХ ===")
+
+    data_validation_success = False
+    data_validation_results = None
+
+    try:
+        # Объединяем признаки и целевую переменную для валидации
+        train_data = X_train.copy()
+        train_data['target'] = y_train.values
+
+        # Выполняем валидацию данных (набор создается внутри функции)
+        data_validation_results = validate_data_quality(train_data)
+        data_validation_success = True
+
+    except Exception as e:
+        print(f"Ошибка при валидации данных: {e}")
+        data_validation_success = False
+
+    # Генерируем отчет о качестве данных, если есть результаты
+    if data_validation_results:
+        try:
+            generate_data_quality_report(data_validation_results)
+        except Exception as e:
+            print(f"Ошибка при генерации отчета о качестве данных: {e}")
+
+    # Проверяем успешность валидации данных
+    if data_validation_success and data_validation_results and data_validation_results.success:
+        print("\nВалидация данных завершена успешно! Продолжаем с валидацией моделей...")
+    else:
+        print("\nВалидация данных не прошла. Прерываем выполнение.")
+        return
+
+    # Продолжаем с валидацией моделей (только если валидация данных прошла успешно)
+    print("\n=== ВАЛИДАЦИЯ МОДЕЛЕЙ ===")
+
     validation_results = []
 
     for model_name, model in models.items():
@@ -524,21 +885,33 @@ def main():
 
         # Кросс-валидация (опционально)
         if "error" not in result:
-            cv_results = cross_validate_model(model, X_train, y_train)
-            if "error" not in cv_results:
-                result["cross_validation"] = cv_results
+            try:
+                cv_results = cross_validate_model(model, X_train, y_train)
+                if "error" not in cv_results:
+                    result["cross_validation"] = cv_results
+            except Exception as e:
+                print(f"Ошибка при кросс-валидации модели {model_name}: {e}")
 
     # Создаем графики
-    create_validation_plots(validation_results)
+    try:
+        create_validation_plots(validation_results)
+    except Exception as e:
+        print(f"Ошибка при создании графиков: {e}")
 
     # Генерируем отчет
-    generate_validation_report(validation_results)
+    try:
+        generate_validation_report(validation_results)
+    except Exception as e:
+        print(f"Ошибка при генерации отчета: {e}")
 
     # Выводим сводку
-    print_validation_summary(validation_results)
+    try:
+        print_validation_summary(validation_results)
+    except Exception as e:
+        print(f"Ошибка при выводе сводки: {e}")
 
     print("\n" + "=" * 60)
-    print("ВАЛИДАЦИЯ МОДЕЛЕЙ ЗАВЕРШЕНА УСПЕШНО")
+    print("ВАЛИДАЦИЯ МОДЕЛЕЙ ЗАВЕРШЕНА")
     print("=" * 60)
 
 

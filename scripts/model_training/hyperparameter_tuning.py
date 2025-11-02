@@ -294,16 +294,21 @@ def evaluate_tuned_models(
 
 
 def create_hyperparameter_plots(
-    results: Dict[str, Any], output_dir: str = "models/artifacts"
+        results: Dict[str, Any], output_dir: str = "models/artifacts"
 ) -> None:
     """
-    Создает графики для анализа гиперпараметров.
+    Создает графики для анализа гиперпараметров без Tkinter.
 
     Args:
         results: Результаты поиска по сетке
         output_dir: Папка для сохранения
     """
     print("\nСоздание графиков анализа гиперпараметров...")
+
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -315,84 +320,71 @@ def create_hyperparameter_plots(
         try:
             cv_results = model_results["cv_results"]
 
-            # Создаем график зависимости от параметров
-            fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-            axes = axes.flatten()
+            # Создаем упрощенный график с важностью параметров
+            fig, ax = plt.subplots(1, 1, figsize=(12, 6))
 
-            # Получаем параметры для анализа
+            # Получаем параметры и их средние оценки
             param_names = [key for key in cv_results.keys() if key.startswith("param_")]
+            mean_scores = cv_results["mean_test_score"]
 
-            if len(param_names) >= 4:
-                param_names = param_names[:4]
-            else:
-                # Дополняем до 4 параметров
-                while len(param_names) < 4:
-                    param_names.append(None)
+            if not param_names:
+                print(f"  Нет параметров для анализа в {model_name}")
+                continue
 
-            for i, param_name in enumerate(param_names):
-                if param_name is None:
-                    axes[i].remove()
-                    continue
+            # Создаем bar plot для средних оценок по параметрам
+            param_importances = []
+            param_labels = []
 
-                ax = axes[i]
+            for param_name in param_names[:6]:  # Ограничиваем до 6 параметров
                 param_values = cv_results[param_name]
-                mean_scores = cv_results["mean_test_score"]
+                unique_params = list(set(param_values))
 
-                # Создаем график
-                if isinstance(param_values[0], (int, float)):
-                    # Числовой параметр
-                    unique_params = sorted(set(param_values))
-                    param_scores = []
-                    for param in unique_params:
-                        mask = param_values == param
+                # Вычисляем среднюю оценку для каждого уникального значения параметра
+                param_scores = []
+                for param in unique_params:
+                    mask = param_values == param
+                    if mask.any():
                         param_scores.append(mean_scores[mask].mean())
 
-                    ax.plot(unique_params, param_scores, "o-")
-                    ax.set_xlabel(param_name.replace("param_", ""))
-                    ax.set_ylabel("CV Score")
-                    ax.set_title(
-                        f'{param_name.replace("param_", "").replace("_", " ").title()}'
-                    )
-                    ax.grid(True, alpha=0.3)
-                else:
-                    # Категориальный параметр
-                    unique_params = list(set(param_values))
-                    param_scores = []
-                    for param in unique_params:
-                        mask = param_values == param
-                        param_scores.append(mean_scores[mask].mean())
+                if param_scores:
+                    # Берем разницу между лучшим и худшим значением как важность
+                    importance = max(param_scores) - min(param_scores)
+                    param_importances.append(importance)
+                    param_labels.append(param_name.replace("param_classifier__", "").replace("_", " ").title())
 
-                    ax.bar(range(len(unique_params)), param_scores)
-                    ax.set_xticks(range(len(unique_params)))
-                    ax.set_xticklabels(unique_params, rotation=45)
-                    ax.set_ylabel("CV Score")
-                    ax.set_title(
-                        f'{param_name.replace("param_", "").replace("_", " ").title()}'
-                    )
-                    ax.grid(True, alpha=0.3)
+            # Сортируем по важности
+            sorted_indices = np.argsort(param_importances)[::-1]
+            sorted_importances = [param_importances[i] for i in sorted_indices]
+            sorted_labels = [param_labels[i] for i in sorted_indices]
 
-            plt.suptitle(f"Анализ гиперпараметров: {model_name}", fontsize=16)
+            # Создаем bar plot
+            bars = ax.barh(sorted_labels, sorted_importances, color='lightblue')
+            ax.set_xlabel('Важность параметра (разница в AUC)')
+            ax.set_title(f'Важность гиперпараметров: {model_name}')
+
+            # Добавляем значения
+            for bar, importance_val in zip(bars, sorted_importances):
+                ax.text(bar.get_width() + 0.001, bar.get_y() + bar.get_height() / 2,
+                        f'{importance_val:.4f}', va='center', fontsize=10)
+
             plt.tight_layout()
 
             # Сохраняем график
-            plot_path = (
-                output_path
-                / f"hyperparameter_analysis_{model_name.lower().replace(' ', '_')}.png"
-            )
+            plot_path = output_path / f"hyperparameter_importance_{model_name.lower().replace(' ', '_')}.png"
             plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-            plt.show()
+            plt.close()
 
-            print(f"График сохранен: {plot_path}")
+            print(f"  График сохранен: {plot_path}")
 
         except Exception as e:
-            print(f"Ошибка при создании графика для {model_name}: {e}")
+            print(f"  Ошибка при создании графика для {model_name}: {e}")
 
 
 def create_comparison_plot(
-    evaluation_results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
+        evaluation_results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
 ) -> None:
     """
-    Создает график сравнения настроенных моделей.
+    Создает график сравнения настроенных моделей без Tkinter.
 
     Args:
         evaluation_results: Результаты оценки
@@ -400,56 +392,54 @@ def create_comparison_plot(
     """
     print("\nСоздание графика сравнения настроенных моделей...")
 
+    # Используем неинтерактивный бэкенд
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     # Подготавливаем данные
     model_names = []
-    metrics = ["accuracy", "precision", "recall", "f1", "roc_auc"]
-    metric_values = {metric: [] for metric in metrics}
+    roc_auc_scores = []
 
     for model_name, model_results in evaluation_results.items():
         if "error" not in model_results and "metrics" in model_results:
             model_names.append(model_name)
-            for metric in metrics:
-                metric_values[metric].append(model_results["metrics"][metric])
+            roc_auc_scores.append(model_results["metrics"]["roc_auc"])
 
     if not model_names:
         print("Нет данных для создания графика сравнения")
         return
 
-    # Создаем график
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
-    axes = axes.flatten()
+    try:
+        # Создаем упрощенный график
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
-    for i, metric in enumerate(metrics):
-        ax = axes[i]
-        bars = ax.bar(model_names, metric_values[metric])
-        ax.set_title(f"{metric.upper()}")
-        ax.set_ylabel("Score")
-        ax.tick_params(axis="x", rotation=45)
+        # Создаем bar plot для ROC-AUC
+        bars = ax.bar(model_names, roc_auc_scores, color=['skyblue', 'lightcoral'])
+        ax.set_ylabel('ROC-AUC Score')
+        ax.set_title('Сравнение настроенных моделей (ROC-AUC)')
+        ax.set_ylim(0, 1)
 
         # Добавляем значения на столбцы
-        for bar, value in zip(bars, metric_values[metric]):
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.01,
-                f"{value:.3f}",
-                ha="center",
-                va="bottom",
-            )
+        for bar, score in zip(bars, roc_auc_scores):
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.01,
+                    f'{score:.4f}', ha='center', va='bottom')
 
-    # Удаляем лишний subplot
-    axes[5].remove()
+        plt.xticks(rotation=45)
+        plt.tight_layout()
 
-    plt.suptitle("Сравнение настроенных моделей", fontsize=16)
-    plt.tight_layout()
+        # Сохраняем график
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        plot_path = output_path / "tuned_models_comparison.png"
+        plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+        plt.close()
 
-    # Сохраняем график
-    output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
-    plot_path = output_path / "tuned_models_comparison.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-    plt.show()
+        print(f"График сохранен: {plot_path}")
 
-    print(f"График сохранен: {plot_path}")
+    except Exception as e:
+        print(f"Ошибка при создании графика сравнения: {e}")
 
 
 def save_tuned_models(
@@ -557,6 +547,10 @@ def print_final_results(evaluation_results: Dict[str, Dict[str, Any]]) -> None:
 
 def main():
     """Основная функция для запуска подбора гиперпараметров."""
+    # Создаем папки для артефактов
+    Path("models/artifacts").mkdir(parents=True, exist_ok=True)
+    Path("models/trained").mkdir(parents=True, exist_ok=True)
+
     # Загружаем данные
     X_train, X_test, y_train, y_test = load_processed_data()
 

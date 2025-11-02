@@ -1,0 +1,639 @@
+{
+  "timestamp": "2025-10-27T15:11:34.403466",
+  "data_shape": [
+    4800,
+    24
+  ],
+  "data_types": {
+    "ID": "int64",
+    "LIMIT_BAL": "float64",
+    "SEX": "int64",
+    "EDUCATION": "int64",
+    "MARRIAGE": "int64",
+    "AGE": "int64",
+    "PAY_0": "int64",
+    "PAY_2": "int64",
+    "PAY_3": "int64",
+    "PAY_4": "int64",
+    "PAY_5": "int64",
+    "PAY_6": "int64",
+    "BILL_AMT1": "float64",
+    "BILL_AMT2": "float64",
+    "BILL_AMT3": "float64",
+    "BILL_AMT4": "float64",
+    "BILL_AMT5": "float64",
+    "BILL_AMT6": "float64",
+    "PAY_AMT1": "float64",
+    "PAY_AMT2": "float64",
+    "PAY_AMT3": "float64",
+    "PAY_AMT4": "float64",
+    "PAY_AMT5": "float64",
+    "PAY_AMT6": "float64"
+  },
+  "overall_quality_score": 100.0,
+  "issues": [],
+  "recommendations": [],
+  "missing_values": {
+    "total_missing": "0",
+    "missing_percentage": 0.0,
+    "columns_with_missing": {
+      "ID": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "LIMIT_BAL": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "SEX": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "EDUCATION": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "MARRIAGE": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "AGE": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_0": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_2": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_3": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_4": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_5": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_6": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "BILL_AMT1": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "BILL_AMT2": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "BILL_AMT3": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "BILL_AMT4": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "BILL_AMT5": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "BILL_AMT6": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_AMT1": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_AMT2": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_AMT3": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_AMT4": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_AMT5": {
+        "count": 0,
+        "percentage": 0.0
+      },
+      "PAY_AMT6": {
+        "count": 0,
+        "percentage": 0.0
+      }
+    },
+    "critical_columns": [],
+    "timestamp": "2025-10-27T15:11:34.404482"
+  },
+  "outliers": {
+    "columns_with_outliers": {
+      "ID": {
+        "count": 0,
+        "percentage": 0.0,
+        "mean_z_score": 0.87,
+        "max_z_score": 1.75
+      },
+      "LIMIT_BAL": {
+        "count": 19,
+        "percentage": 0.4,
+        "mean_z_score": 0.81,
+        "max_z_score": 4.87
+      },
+      "SEX": {
+        "count": 0,
+        "percentage": 0.0,
+        "mean_z_score": 0.98,
+        "max_z_score": 1.21
+      },
+      "EDUCATION": {
+        "count": 54,
+        "percentage": 1.12,
+        "mean_z_score": 0.76,
+        "max_z_score": 5.28
+      },
+      "MARRIAGE": {
+        "count": 0,
+        "percentage": 0.0,
+        "mean_z_score": 0.98,
+        "max_z_score": 2.98
+      },
+      "AGE": {
+        "count": 27,
+        "percentage": 0.56,
+        "mean_z_score": 0.81,
+        "max_z_score": 4.0
+      },
+      "PAY_0": {
+        "count": 23,
+        "percentage": 0.48,
+        "mean_z_score": 0.66,
+        "max_z_score": 7.19
+      },
+      "PAY_2": {
+        "count": 26,
+        "percentage": 0.54,
+        "mean_z_score": 0.69,
+        "max_z_score": 5.96
+      },
+      "PAY_3": {
+        "count": 28,
+        "percentage": 0.58,
+        "mean_z_score": 0.69,
+        "max_z_score": 6.68
+      },
+      "PAY_4": {
+        "count": 33,
+        "percentage": 0.69,
+        "mean_z_score": 0.69,
+        "max_z_score": 6.11
+      },
+      "PAY_5": {
+        "count": 26,
+        "percentage": 0.54,
+        "mean_z_score": 0.71,
+        "max_z_score": 6.41
+      },
+      "PAY_6": {
+        "count": 18,
+        "percentage": 0.38,
+        "mean_z_score": 0.73,
+        "max_z_score": 6.41
+      },
+      "BILL_AMT1": {
+        "count": 108,
+        "percentage": 2.25,
+        "mean_z_score": 0.69,
+        "max_z_score": 8.03
+      },
+      "BILL_AMT2": {
+        "count": 109,
+        "percentage": 2.27,
+        "mean_z_score": 0.68,
+        "max_z_score": 8.58
+      },
+      "BILL_AMT3": {
+        "count": 110,
+        "percentage": 2.29,
+        "mean_z_score": 0.68,
+        "max_z_score": 9.29
+      },
+      "BILL_AMT4": {
+        "count": 111,
+        "percentage": 2.31,
+        "mean_z_score": 0.68,
+        "max_z_score": 10.17
+      },
+      "BILL_AMT5": {
+        "count": 104,
+        "percentage": 2.17,
+        "mean_z_score": 0.68,
+        "max_z_score": 7.28
+      },
+      "BILL_AMT6": {
+        "count": 105,
+        "percentage": 2.19,
+        "mean_z_score": 0.67,
+        "max_z_score": 8.01
+      },
+      "PAY_AMT1": {
+        "count": 79,
+        "percentage": 1.65,
+        "mean_z_score": 0.4,
+        "max_z_score": 19.62
+      },
+      "PAY_AMT2": {
+        "count": 69,
+        "percentage": 1.44,
+        "mean_z_score": 0.37,
+        "max_z_score": 23.01
+      },
+      "PAY_AMT3": {
+        "count": 68,
+        "percentage": 1.42,
+        "mean_z_score": 0.37,
+        "max_z_score": 21.77
+      },
+      "PAY_AMT4": {
+        "count": 78,
+        "percentage": 1.62,
+        "mean_z_score": 0.39,
+        "max_z_score": 24.76
+      },
+      "PAY_AMT5": {
+        "count": 79,
+        "percentage": 1.65,
+        "mean_z_score": 0.38,
+        "max_z_score": 20.2
+      },
+      "PAY_AMT6": {
+        "count": 82,
+        "percentage": 1.71,
+        "mean_z_score": 0.36,
+        "max_z_score": 18.76
+      }
+    },
+    "total_outliers": "1356",
+    "critical_columns": [],
+    "timestamp": "2025-10-27T15:11:34.405215"
+  },
+  "distributions": {
+    "columns_distribution": {
+      "ID": {
+        "mean": 14954.2988,
+        "std": 8571.8479,
+        "min": "7",
+        "max": "29996",
+        "skewness": 0.0191,
+        "kurtosis": -1.1908,
+        "variance": 73476575.9124
+      },
+      "LIMIT_BAL": {
+        "mean": 167741.6667,
+        "std": 129937.8084,
+        "min": 10000.0,
+        "max": 800000.0,
+        "skewness": 0.9875,
+        "kurtosis": 0.5328,
+        "variance": 16883834062.6519
+      },
+      "SEX": {
+        "mean": 1.5954,
+        "std": 0.4909,
+        "min": "1",
+        "max": "2",
+        "skewness": -0.3888,
+        "kurtosis": -1.8488,
+        "variance": 0.2409
+      },
+      "EDUCATION": {
+        "mean": 1.8527,
+        "std": 0.7857,
+        "min": "0",
+        "max": "6",
+        "skewness": 0.9664,
+        "kurtosis": 2.1028,
+        "variance": 0.6174
+      },
+      "MARRIAGE": {
+        "mean": 1.5498,
+        "std": 0.5197,
+        "min": "0",
+        "max": "3",
+        "skewness": -0.0393,
+        "kurtosis": -1.4114,
+        "variance": 0.2701
+      },
+      "AGE": {
+        "mean": 35.4223,
+        "std": 9.1525,
+        "min": "21",
+        "max": "72",
+        "skewness": 0.7522,
+        "kurtosis": 0.0843,
+        "variance": 83.7689
+      },
+      "PAY_0": {
+        "mean": -0.0169,
+        "std": 1.1146,
+        "min": "-2",
+        "max": "8",
+        "skewness": 0.6284,
+        "kurtosis": 2.3588,
+        "variance": 1.2423
+      },
+      "PAY_2": {
+        "mean": -0.155,
+        "std": 1.1998,
+        "min": "-2",
+        "max": "7",
+        "skewness": 0.7488,
+        "kurtosis": 1.4564,
+        "variance": 1.4396
+      },
+      "PAY_3": {
+        "mean": -0.1698,
+        "std": 1.2234,
+        "min": "-2",
+        "max": "8",
+        "skewness": 0.9389,
+        "kurtosis": 2.6496,
+        "variance": 1.4967
+      },
+      "PAY_4": {
+        "mean": -0.2271,
+        "std": 1.1823,
+        "min": "-2",
+        "max": "7",
+        "skewness": 1.0822,
+        "kurtosis": 3.7966,
+        "variance": 1.3979
+      },
+      "PAY_5": {
+        "mean": -0.2758,
+        "std": 1.1345,
+        "min": "-2",
+        "max": "7",
+        "skewness": 1.0558,
+        "kurtosis": 4.3177,
+        "variance": 1.2871
+      },
+      "PAY_6": {
+        "mean": -0.3088,
+        "std": 1.14,
+        "min": "-2",
+        "max": "7",
+        "skewness": 0.9515,
+        "kurtosis": 3.7045,
+        "variance": 1.2995
+      },
+      "BILL_AMT1": {
+        "mean": 51798.5727,
+        "std": 74848.6544,
+        "min": -14386.0,
+        "max": 653062.0,
+        "skewness": 2.6277,
+        "kurtosis": 9.076,
+        "variance": 5602321070.6753
+      },
+      "BILL_AMT2": {
+        "mean": 49781.1794,
+        "std": 72498.0989,
+        "min": -13543.0,
+        "max": 671563.0,
+        "skewness": 2.6991,
+        "kurtosis": 9.8855,
+        "variance": 5255974343.7176
+      },
+      "BILL_AMT3": {
+        "mean": 47303.4083,
+        "std": 69542.9141,
+        "min": -11925.0,
+        "max": 693131.0,
+        "skewness": 2.7957,
+        "kurtosis": 11.0039,
+        "variance": 4836216907.1298
+      },
+      "BILL_AMT4": {
+        "mean": 43677.0833,
+        "std": 65214.6044,
+        "min": -9157.0,
+        "max": 706864.0,
+        "skewness": 2.8324,
+        "kurtosis": 11.2127,
+        "variance": 4252944629.7288
+      },
+      "BILL_AMT5": {
+        "mean": 40484.1358,
+        "std": 61651.2062,
+        "min": -61372.0,
+        "max": 489200.0,
+        "skewness": 2.7808,
+        "kurtosis": 10.0246,
+        "variance": 3800871231.1876
+      },
+      "BILL_AMT6": {
+        "mean": 38980.6233,
+        "std": 60979.7311,
+        "min": -339603.0,
+        "max": 527566.0,
+        "skewness": 2.754,
+        "kurtosis": 10.7564,
+        "variance": 3718527605.9173
+      },
+      "PAY_AMT1": {
+        "mean": 5756.6523,
+        "std": 15099.0926,
+        "min": 0.0,
+        "max": 302000.0,
+        "skewness": 9.03,
+        "kurtosis": 115.3156,
+        "variance": 227982597.8534
+      },
+      "PAY_AMT2": {
+        "mean": 5627.3377,
+        "std": 16487.9225,
+        "min": 0.0,
+        "max": 384986.0,
+        "skewness": 10.826,
+        "kurtosis": 169.2265,
+        "variance": 271851586.7601
+      },
+      "PAY_AMT3": {
+        "mean": 5186.819,
+        "std": 15577.3644,
+        "min": 0.0,
+        "max": 344261.0,
+        "skewness": 10.0039,
+        "kurtosis": 141.6113,
+        "variance": 242654282.8822
+      },
+      "PAY_AMT4": {
+        "mean": 4581.7254,
+        "std": 13182.3704,
+        "min": 0.0,
+        "max": 330982.0,
+        "skewness": 9.9196,
+        "kurtosis": 149.4311,
+        "variance": 173774888.3226
+      },
+      "PAY_AMT5": {
+        "mean": 4851.7898,
+        "std": 14785.9845,
+        "min": 0.0,
+        "max": 303512.0,
+        "skewness": 8.7163,
+        "kurtosis": 100.814,
+        "variance": 218625338.2469
+      },
+      "PAY_AMT6": {
+        "mean": 5444.2583,
+        "std": 18116.9348,
+        "min": 0.0,
+        "max": 345293.0,
+        "skewness": 8.721,
+        "kurtosis": 96.6714,
+        "variance": 328223326.0574
+      }
+    },
+    "skewed_columns": [
+      {
+        "column": "BILL_AMT1",
+        "skewness": 2.6277
+      },
+      {
+        "column": "BILL_AMT2",
+        "skewness": 2.6991
+      },
+      {
+        "column": "BILL_AMT3",
+        "skewness": 2.7957
+      },
+      {
+        "column": "BILL_AMT4",
+        "skewness": 2.8324
+      },
+      {
+        "column": "BILL_AMT5",
+        "skewness": 2.7808
+      },
+      {
+        "column": "BILL_AMT6",
+        "skewness": 2.754
+      },
+      {
+        "column": "PAY_AMT1",
+        "skewness": 9.03
+      },
+      {
+        "column": "PAY_AMT2",
+        "skewness": 10.826
+      },
+      {
+        "column": "PAY_AMT3",
+        "skewness": 10.0039
+      },
+      {
+        "column": "PAY_AMT4",
+        "skewness": 9.9196
+      },
+      {
+        "column": "PAY_AMT5",
+        "skewness": 8.7163
+      },
+      {
+        "column": "PAY_AMT6",
+        "skewness": 8.721
+      }
+    ],
+    "high_kurtosis_columns": [
+      {
+        "column": "PAY_4",
+        "kurtosis": 3.7966
+      },
+      {
+        "column": "PAY_5",
+        "kurtosis": 4.3177
+      },
+      {
+        "column": "PAY_6",
+        "kurtosis": 3.7045
+      },
+      {
+        "column": "BILL_AMT1",
+        "kurtosis": 9.076
+      },
+      {
+        "column": "BILL_AMT2",
+        "kurtosis": 9.8855
+      },
+      {
+        "column": "BILL_AMT3",
+        "kurtosis": 11.0039
+      },
+      {
+        "column": "BILL_AMT4",
+        "kurtosis": 11.2127
+      },
+      {
+        "column": "BILL_AMT5",
+        "kurtosis": 10.0246
+      },
+      {
+        "column": "BILL_AMT6",
+        "kurtosis": 10.7564
+      },
+      {
+        "column": "PAY_AMT1",
+        "kurtosis": 115.3156
+      },
+      {
+        "column": "PAY_AMT2",
+        "kurtosis": 169.2265
+      },
+      {
+        "column": "PAY_AMT3",
+        "kurtosis": 141.6113
+      },
+      {
+        "column": "PAY_AMT4",
+        "kurtosis": 149.4311
+      },
+      {
+        "column": "PAY_AMT5",
+        "kurtosis": 100.814
+      },
+      {
+        "column": "PAY_AMT6",
+        "kurtosis": 96.6714
+      }
+    ],
+    "low_variance_columns": [],
+    "timestamp": "2025-10-27T15:11:34.423957"
+  },
+  "data_integrity": {
+    "duplicate_rows": "0",
+    "duplicate_percentage": 0.0,
+    "duplicate_columns": [],
+    "constant_columns": [],
+    "highly_correlated_columns": [],
+    "timestamp": "2025-10-27T15:11:34.469920"
+  },
+  "categorical_data": {
+    "categorical_columns": {},
+    "high_cardinality_columns": [],
+    "low_cardinality_columns": [],
+    "timestamp": "2025-10-27T15:11:34.487468"
+  }
+}
