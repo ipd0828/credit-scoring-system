@@ -52,6 +52,9 @@ credit_scoring_project/
 │   │   ├── eda.py        # Исследовательский анализ данных
 │   │   └── preprocessing.py # Предобработка данных
 │   ├── model_training/   # Обучение моделей
+│   │   ├── train_models_custom.py # Обучение базовых моделей
+│   │   ├── hyperparameter_tuning_custom.py # Подбор гиперпараметров
+│   │   ├── validation_custom.py # Валидация моделей
 │   │   ├── train_models.py # Обучение базовых моделей
 │   │   ├── hyperparameter_tuning.py # Подбор гиперпараметров
 │   │   ├── validation.py # Валидация моделей
@@ -98,7 +101,7 @@ python scripts/setup_pre_commit.py
 
 ```bash
 # Поместите файл данных в папку data/raw/
-# Файл должен называться: accepted_2007_to_2018Q4.csv
+# Файл должен называться: UCI_Credit_Card.csv
 ```
 
 ### 4. Запуск ML пайплайна
@@ -107,6 +110,9 @@ python scripts/setup_pre_commit.py
 
 ```bash
 # Запуск всех этапов последовательно
+# Модифицированный вариант под новый вариант данных
+python scripts/run_pipeline.py --use-custom-features
+# Старая версия
 python scripts/run_pipeline.py
 ```
 
@@ -120,12 +126,21 @@ python scripts/data_processing/eda.py
 python scripts/data_processing/preprocessing.py
 
 # 3. Обучение моделей
+# новый вариант модели
+python scripts/model_training/train_models_custom.py
+# старая версия
 python scripts/model_training/train_models.py
 
 # 4. Подбор гиперпараметров
+# новый вариант модели
+python scripts/model_training/hyperparameter_tuning_custom.py
+# старая версия
 python scripts/model_training/hyperparameter_tuning.py
 
 # 5. Валидация моделей
+# новый вариант модели
+python scripts/model_training/validation_custom.py
+# старая версия
 python scripts/model_training/validation.py
 ```
 
@@ -162,9 +177,15 @@ make start-all
 
 ```bash
 # Запуск API (упрощенная версия)
+# новый вариант модели
 uvicorn api.simple_main:app --reload --host 0.0.0.0 --port 8000
+# старая версия
+uvicorn api.simple_main_old:app --reload --host 0.0.0.0 --port 8000
 
 # Запуск frontend
+# новый вариант модели
+streamlit run frontend/app_custom.py --server.port 8501
+# старая версия
 streamlit run frontend/app.py --server.port 8501
 ```
 
