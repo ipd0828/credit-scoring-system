@@ -76,17 +76,23 @@ class EDAProcessor:
                     self.df[col].nunique() for col in self.df.columns
                 ],
                 "Уникальные (категориальные) значения": [
-                    self.df[col].dropna().unique().tolist()
-                    if self.df[col].dtype in ["object", "category", "string"]
-                    else None
+                    (
+                        self.df[col].dropna().unique().tolist()
+                        if self.df[col].dtype in ["object", "category", "string"]
+                        else None
+                    )
                     for col in self.df.columns
                 ],
                 "Рекомендации": [
-                    "Удалить (константный столбец)"
-                    if self.df[col].nunique() == 1
-                    else "Удалить (ID или уникальные значения)"
-                    if self.df[col].nunique() == len(self.df)
-                    else "Оставить"
+                    (
+                        "Удалить (константный столбец)"
+                        if self.df[col].nunique() == 1
+                        else (
+                            "Удалить (ID или уникальные значения)"
+                            if self.df[col].nunique() == len(self.df)
+                            else "Оставить"
+                        )
+                    )
                     for col in self.df.columns
                 ],
             }
@@ -677,13 +683,13 @@ class EDAProcessor:
                     ctab.sum(axis=0) == 1
                 ).all()
                 if unique_combinations:
-                    conclusions[
-                        f"{col1} vs {col2}"
-                    ] = "Чёткая взаимосвязь 1:1 (каждой категории одной переменной соответствует только одна категория другой переменной)."
+                    conclusions[f"{col1} vs {col2}"] = (
+                        "Чёткая взаимосвязь 1:1 (каждой категории одной переменной соответствует только одна категория другой переменной)."
+                    )
                 else:
-                    conclusions[
-                        f"{col1} vs {col2}"
-                    ] = "Существуют неоднозначные связи (одна категория соответствует нескольким категориям другой переменной)."
+                    conclusions[f"{col1} vs {col2}"] = (
+                        "Существуют неоднозначные связи (одна категория соответствует нескольким категориям другой переменной)."
+                    )
 
         # Объединяем все таблицы в одну
         if combined_cross_tab:
@@ -889,9 +895,9 @@ class EDAProcessor:
                                 corr_value = abs(
                                     correlations[corr_type].loc[col1, col2]
                                 )
-                                pair_data[
-                                    f"Корреляция {corr_type.capitalize()}"
-                                ] = round(corr_value, 2)
+                                pair_data[f"Корреляция {corr_type.capitalize()}"] = (
+                                    round(corr_value, 2)
+                                )
                                 pair_data[
                                     f"Вывод по шкале Чеддока ({corr_type.capitalize()})"
                                 ] = cheddock_scale(corr_value)
@@ -987,12 +993,14 @@ class EDAProcessor:
                     cramers_v_results.append(
                         {
                             "Признак": col,
-                            "Cramer's V": round(cramers_v, 2)
-                            if cramers_v is not None
-                            else None,
-                            "Интерпретация (Cramer's V)": cramers_v_scale(cramers_v)
-                            if cramers_v is not None
-                            else "Нет связи",
+                            "Cramer's V": (
+                                round(cramers_v, 2) if cramers_v is not None else None
+                            ),
+                            "Интерпретация (Cramer's V)": (
+                                cramers_v_scale(cramers_v)
+                                if cramers_v is not None
+                                else "Нет связи"
+                            ),
                         }
                     )
             results["cramers_v"] = pd.DataFrame(cramers_v_results)

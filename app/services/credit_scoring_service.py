@@ -270,9 +270,11 @@ class CreditScoringService:
             "model_version": self.model_version,
             "model_type": type(self.model).__name__,
             "threshold": self.model_threshold,
-            "features_count": len(self.model.feature_importances_)
-            if hasattr(self.model, "feature_importances_")
-            else None,
+            "features_count": (
+                len(self.model.feature_importances_)
+                if hasattr(self.model, "feature_importances_")
+                else None
+            ),
             "last_updated": datetime.utcnow().isoformat(),
         }
 
