@@ -294,7 +294,7 @@ def evaluate_tuned_models(
 
 
 def create_hyperparameter_plots(
-        results: Dict[str, Any], output_dir: str = "models/artifacts"
+    results: Dict[str, Any], output_dir: str = "models/artifacts"
 ) -> None:
     """
     Создает графики для анализа гиперпараметров без Tkinter.
@@ -307,7 +307,8 @@ def create_hyperparameter_plots(
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     output_path = Path(output_dir)
@@ -350,7 +351,11 @@ def create_hyperparameter_plots(
                     # Берем разницу между лучшим и худшим значением как важность
                     importance = max(param_scores) - min(param_scores)
                     param_importances.append(importance)
-                    param_labels.append(param_name.replace("param_classifier__", "").replace("_", " ").title())
+                    param_labels.append(
+                        param_name.replace("param_classifier__", "")
+                        .replace("_", " ")
+                        .title()
+                    )
 
             # Сортируем по важности
             sorted_indices = np.argsort(param_importances)[::-1]
@@ -358,19 +363,27 @@ def create_hyperparameter_plots(
             sorted_labels = [param_labels[i] for i in sorted_indices]
 
             # Создаем bar plot
-            bars = ax.barh(sorted_labels, sorted_importances, color='lightblue')
-            ax.set_xlabel('Важность параметра (разница в AUC)')
-            ax.set_title(f'Важность гиперпараметров: {model_name}')
+            bars = ax.barh(sorted_labels, sorted_importances, color="lightblue")
+            ax.set_xlabel("Важность параметра (разница в AUC)")
+            ax.set_title(f"Важность гиперпараметров: {model_name}")
 
             # Добавляем значения
             for bar, importance_val in zip(bars, sorted_importances):
-                ax.text(bar.get_width() + 0.001, bar.get_y() + bar.get_height() / 2,
-                        f'{importance_val:.4f}', va='center', fontsize=10)
+                ax.text(
+                    bar.get_width() + 0.001,
+                    bar.get_y() + bar.get_height() / 2,
+                    f"{importance_val:.4f}",
+                    va="center",
+                    fontsize=10,
+                )
 
             plt.tight_layout()
 
             # Сохраняем график
-            plot_path = output_path / f"hyperparameter_importance_{model_name.lower().replace(' ', '_')}.png"
+            plot_path = (
+                output_path
+                / f"hyperparameter_importance_{model_name.lower().replace(' ', '_')}.png"
+            )
             plt.savefig(plot_path, dpi=300, bbox_inches="tight")
             plt.close()
 
@@ -381,7 +394,7 @@ def create_hyperparameter_plots(
 
 
 def create_comparison_plot(
-        evaluation_results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
+    evaluation_results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
 ) -> None:
     """
     Создает график сравнения настроенных моделей без Tkinter.
@@ -394,7 +407,8 @@ def create_comparison_plot(
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     # Подготавливаем данные
@@ -415,16 +429,21 @@ def create_comparison_plot(
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
         # Создаем bar plot для ROC-AUC
-        bars = ax.bar(model_names, roc_auc_scores, color=['skyblue', 'lightcoral'])
-        ax.set_ylabel('ROC-AUC Score')
-        ax.set_title('Сравнение настроенных моделей (ROC-AUC)')
+        bars = ax.bar(model_names, roc_auc_scores, color=["skyblue", "lightcoral"])
+        ax.set_ylabel("ROC-AUC Score")
+        ax.set_title("Сравнение настроенных моделей (ROC-AUC)")
         ax.set_ylim(0, 1)
 
         # Добавляем значения на столбцы
         for bar, score in zip(bars, roc_auc_scores):
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.01,
-                    f'{score:.4f}', ha='center', va='bottom')
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height + 0.01,
+                f"{score:.4f}",
+                ha="center",
+                va="bottom",
+            )
 
         plt.xticks(rotation=45)
         plt.tight_layout()

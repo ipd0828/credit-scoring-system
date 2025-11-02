@@ -62,7 +62,7 @@ def load_processed_data():
 
 def fix_categorical_features(X_train, X_test):
     """Исправляет типы категориальных признаков для CatBoost."""
-    categorical_features = ['sex', 'marriage_new', 'pay_new', 'education_new']
+    categorical_features = ["sex", "marriage_new", "pay_new", "education_new"]
 
     for feature in categorical_features:
         if feature in X_train.columns:
@@ -81,28 +81,28 @@ def get_param_grids():
     param_grids = {}
 
     # Logistic Regression
-    param_grids['LogisticRegression'] = {
-        'classifier__C': [0.1, 1, 10],
-        'classifier__penalty': ['l2'],
-        'classifier__solver': ['liblinear'],
-        'classifier__max_iter': [1000]
+    param_grids["LogisticRegression"] = {
+        "classifier__C": [0.1, 1, 10],
+        "classifier__penalty": ["l2"],
+        "classifier__solver": ["liblinear"],
+        "classifier__max_iter": [1000],
     }
 
     # Random Forest
-    param_grids['RandomForestClassifier'] = {
-        'classifier__n_estimators': [50, 100, 200],
-        'classifier__max_depth': [5, 10, None],
-        'classifier__min_samples_split': [2, 5, 10],
-        'classifier__min_samples_leaf': [1, 2, 4]
+    param_grids["RandomForestClassifier"] = {
+        "classifier__n_estimators": [50, 100, 200],
+        "classifier__max_depth": [5, 10, None],
+        "classifier__min_samples_split": [2, 5, 10],
+        "classifier__min_samples_leaf": [1, 2, 4],
     }
 
     # CatBoost
     if CATBOOST_AVAILABLE:
-        param_grids['CatBoostClassifier'] = {
-            'classifier__iterations': [100, 200],
-            'classifier__depth': [4, 6],
-            'classifier__learning_rate': [0.05, 0.1],
-            'classifier__l2_leaf_reg': [3, 5]
+        param_grids["CatBoostClassifier"] = {
+            "classifier__iterations": [100, 200],
+            "classifier__depth": [4, 6],
+            "classifier__learning_rate": [0.05, 0.1],
+            "classifier__l2_leaf_reg": [3, 5],
         }
 
     print(f"Создано {len(param_grids)} сеток параметров")
@@ -112,19 +112,23 @@ def get_param_grids():
 def create_models():
     """Создание базовых моделей для настройки."""
     models = {
-        'LogisticRegression': LogisticRegression(random_state=42, class_weight='balanced'),
-        'RandomForestClassifier': RandomForestClassifier(random_state=42, class_weight='balanced'),
+        "LogisticRegression": LogisticRegression(
+            random_state=42, class_weight="balanced"
+        ),
+        "RandomForestClassifier": RandomForestClassifier(
+            random_state=42, class_weight="balanced"
+        ),
     }
 
     if CATBOOST_AVAILABLE:
-        models['CatBoostClassifier'] = CatBoostClassifier(
+        models["CatBoostClassifier"] = CatBoostClassifier(
             random_state=42,
             verbose=False,
             thread_count=-1,
             # Добавленные настройки
-            loss_function='Logloss',
-            auto_class_weights='Balanced',
-            eval_metric='AUC'
+            loss_function="Logloss",
+            auto_class_weights="Balanced",
+            eval_metric="AUC",
         )
 
     return models
@@ -132,8 +136,10 @@ def create_models():
 
 def get_categorical_features(X_train):
     """Определение категориальных признаков для CatBoost."""
-    categorical_features = ['sex', 'marriage_new', 'pay_new', 'education_new']
-    cat_features_indices = [i for i, col in enumerate(X_train.columns) if col in categorical_features]
+    categorical_features = ["sex", "marriage_new", "pay_new", "education_new"]
+    cat_features_indices = [
+        i for i, col in enumerate(X_train.columns) if col in categorical_features
+    ]
     return cat_features_indices
 
 
@@ -158,56 +164,61 @@ def tune_hyperparameters(X_train, y_train):
         print(f"\nПоиск параметров для {model_name}...")
 
         # Создаем pipeline
-        pipeline = Pipeline([
-            ('classifier', model)
-        ])
+        pipeline = Pipeline([("classifier", model)])
 
         # Настройка гиперпараметров
         grid_search = GridSearchCV(
             pipeline,
             param_grids[model_name],
             cv=2,  # Уменьшаем для скорости
-            scoring='roc_auc',
+            scoring="roc_auc",
             n_jobs=-1,
-            verbose=1
+            verbose=1,
         )
 
         # Особый подход для CatBoost с категориальными признаками
-        if model_name == 'CatBoostClassifier' and CATBOOST_AVAILABLE:
+        if model_name == "CatBoostClassifier" and CATBOOST_AVAILABLE:
             try:
                 # Для CatBoost используем прямой вызов без Pipeline
                 catboost_model = CatBoostClassifier(
                     random_state=42,
                     verbose=False,
                     thread_count=-1,
-                    loss_function='Logloss',
-                    auto_class_weights='Balanced',
-                    eval_metric='AUC'
+                    loss_function="Logloss",
+                    auto_class_weights="Balanced",
+                    eval_metric="AUC",
                 )
 
                 catboost_grid_search = GridSearchCV(
                     catboost_model,
                     {
-                        'iterations': [100, 200],
-                        'depth': [4, 6],
-                        'learning_rate': [0.05, 0.1],
-                        'l2_leaf_reg': [3, 5]
+                        "iterations": [100, 200],
+                        "depth": [4, 6],
+                        "learning_rate": [0.05, 0.1],
+                        "l2_leaf_reg": [3, 5],
                     },
                     cv=2,
-                    scoring='roc_auc',
+                    scoring="roc_auc",
                     n_jobs=-1,
-                    verbose=1
+                    verbose=1,
                 )
 
                 # Преобразуем категориальные признаки в правильный формат
                 X_train_fixed = X_train.copy()
-                categorical_features = ['sex', 'marriage_new', 'pay_new', 'education_new']
+                categorical_features = [
+                    "sex",
+                    "marriage_new",
+                    "pay_new",
+                    "education_new",
+                ]
                 for feature in categorical_features:
                     if feature in X_train_fixed.columns:
                         X_train_fixed[feature] = X_train_fixed[feature].astype(str)
 
                 # Обучаем с категориальными признаками
-                catboost_grid_search.fit(X_train_fixed, y_train, cat_features=cat_features_indices)
+                catboost_grid_search.fit(
+                    X_train_fixed, y_train, cat_features=cat_features_indices
+                )
                 best_models[model_name] = catboost_grid_search.best_estimator_
                 best_score = catboost_grid_search.best_score_
                 best_params = catboost_grid_search.best_params_
@@ -216,16 +227,20 @@ def tune_hyperparameters(X_train, y_train):
                 print(f"  Лучший AUC: {best_score:.4f}")
                 print(f"  Лучшие параметры: {best_params}")
 
-                results.append({
-                    'model': model_name,
-                    'best_score': best_score,
-                    'best_params': best_params,
-                    'best_estimator': best_models[model_name]
-                })
+                results.append(
+                    {
+                        "model": model_name,
+                        "best_score": best_score,
+                        "best_params": best_params,
+                        "best_estimator": best_models[model_name],
+                    }
+                )
 
             except Exception as e:
                 print(f"Ошибка при настройке CatBoost: {e}")  # Убрали emoji
-                print("Пропускаем CatBoost и продолжаем с другими моделями")  # Убрали emoji
+                print(
+                    "Пропускаем CatBoost и продолжаем с другими моделями"
+                )  # Убрали emoji
                 continue
 
         else:
@@ -240,12 +255,14 @@ def tune_hyperparameters(X_train, y_train):
                 print(f"  Лучший AUC: {best_score:.4f}")
                 print(f"  Лучшие параметры: {best_params}")
 
-                results.append({
-                    'model': model_name,
-                    'best_score': best_score,
-                    'best_params': best_params,
-                    'best_estimator': best_models[model_name]
-                })
+                results.append(
+                    {
+                        "model": model_name,
+                        "best_score": best_score,
+                        "best_params": best_params,
+                        "best_estimator": best_models[model_name],
+                    }
+                )
             except Exception as e:
                 print(f"Ошибка при настройке {model_name}: {e}")  # Убрали emoji
                 continue
@@ -269,10 +286,15 @@ def evaluate_tuned_models(best_models, X_test, y_test):
 
         try:
             # Предсказания
-            if model_name == 'CatBoostClassifier':
+            if model_name == "CatBoostClassifier":
                 # Для CatBoost преобразуем категориальные признаки
                 X_test_fixed = X_test.copy()
-                categorical_features = ['sex', 'marriage_new', 'pay_new', 'education_new']
+                categorical_features = [
+                    "sex",
+                    "marriage_new",
+                    "pay_new",
+                    "education_new",
+                ]
                 for feature in categorical_features:
                     if feature in X_test_fixed.columns:
                         X_test_fixed[feature] = X_test_fixed[feature].astype(str)
@@ -291,7 +313,7 @@ def evaluate_tuned_models(best_models, X_test, y_test):
             # Кросс-валидация
             cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-            if model_name == 'CatBoostClassifier':
+            if model_name == "CatBoostClassifier":
                 cv_scores = []
                 for train_idx, val_idx in cv.split(X_test, y_test):
                     X_train_cv, X_val_cv = X_test.iloc[train_idx], X_test.iloc[val_idx]
@@ -302,12 +324,21 @@ def evaluate_tuned_models(best_models, X_test, y_test):
                     X_val_cv_fixed = X_val_cv.copy()
                     for feature in categorical_features:
                         if feature in X_train_cv_fixed.columns:
-                            X_train_cv_fixed[feature] = X_train_cv_fixed[feature].astype(str)
-                            X_val_cv_fixed[feature] = X_val_cv_fixed[feature].astype(str)
+                            X_train_cv_fixed[feature] = X_train_cv_fixed[
+                                feature
+                            ].astype(str)
+                            X_val_cv_fixed[feature] = X_val_cv_fixed[feature].astype(
+                                str
+                            )
 
                     # Создаем временную модель для CV
                     temp_model = CatBoostClassifier(**model.get_params())
-                    temp_model.fit(X_train_cv_fixed, y_train_cv, cat_features=cat_features_indices, verbose=False)
+                    temp_model.fit(
+                        X_train_cv_fixed,
+                        y_train_cv,
+                        cat_features=cat_features_indices,
+                        verbose=False,
+                    )
                     y_proba_cv = temp_model.predict_proba(X_val_cv_fixed)[:, 1]
                     cv_score = roc_auc_score(y_val_cv, y_proba_cv)
                     cv_scores.append(cv_score)
@@ -315,7 +346,9 @@ def evaluate_tuned_models(best_models, X_test, y_test):
                 cv_mean = np.mean(cv_scores)
                 cv_std = np.std(cv_scores)
             else:
-                cv_scores = cross_val_score(model, X_test, y_test, cv=cv, scoring='roc_auc')
+                cv_scores = cross_val_score(
+                    model, X_test, y_test, cv=cv, scoring="roc_auc"
+                )
                 cv_mean = cv_scores.mean()
                 cv_std = cv_scores.std()
 
@@ -325,14 +358,16 @@ def evaluate_tuned_models(best_models, X_test, y_test):
             print(f"  ROC-AUC: {roc_auc:.4f}")
             print(f"  CV AUC: {cv_mean:.4f} ± {cv_std:.4f}")
 
-            results.append({
-                'model': model_name,
-                'accuracy': accuracy,
-                'f1_score': f1,
-                'roc_auc': roc_auc,
-                'cv_auc_mean': cv_mean,
-                'cv_auc_std': cv_std
-            })
+            results.append(
+                {
+                    "model": model_name,
+                    "accuracy": accuracy,
+                    "f1_score": f1,
+                    "roc_auc": roc_auc,
+                    "cv_auc_mean": cv_mean,
+                    "cv_auc_std": cv_std,
+                }
+            )
 
             # Сохраняем настроенную модель
             models_dir = Path("models/trained_custom")
@@ -359,7 +394,7 @@ def save_tuning_results(results):
 
     # Создаем DataFrame с результатами
     results_df = pd.DataFrame(results)
-    results_df = results_df.sort_values('roc_auc', ascending=False)
+    results_df = results_df.sort_values("roc_auc", ascending=False)
 
     # Сохраняем результаты
     output_dir = Path("models/trained_custom")
@@ -370,15 +405,18 @@ def save_tuning_results(results):
     print(f"  Результаты сохранены: {results_path}")
 
     # Сохраняем лучшую настроенную модель
-    best_model_name = results_df.iloc[0]['model']
+    best_model_name = results_df.iloc[0]["model"]
     best_model_path = output_dir / f"tuned_{best_model_name.lower()}.pkl"
     final_best_path = output_dir / "best_tuned_model.pkl"
 
     # Копируем лучшую модель
     import shutil
+
     shutil.copy2(best_model_path, final_best_path)
     print(f"  Лучшая настроенная модель сохранена: {final_best_path}")
-    print(f"  Лучшая настроенная модель: {best_model_name} (ROC-AUC: {results_df.iloc[0]['roc_auc']:.4f})")
+    print(
+        f"  Лучшая настроенная модель: {best_model_name} (ROC-AUC: {results_df.iloc[0]['roc_auc']:.4f})"
+    )
 
     return results_df
 

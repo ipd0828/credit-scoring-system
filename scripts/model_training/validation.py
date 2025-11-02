@@ -237,14 +237,15 @@ def create_validation_plots(
 
 
 def create_metrics_comparison_plot(
-        validation_results: List[Dict[str, Any]], output_path: Path
+    validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
     """Создает график сравнения метрик без Tkinter."""
     print("  Создание графика сравнения метрик...")
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     try:
@@ -261,22 +262,35 @@ def create_metrics_comparison_plot(
         fig, ax = plt.subplots(1, 1, figsize=(12, 6))
 
         # Используем только ROC-AUC для сравнения
-        roc_auc_scores = metric_values['roc_auc']
+        roc_auc_scores = metric_values["roc_auc"]
 
         # Создаем bar plot
-        colors = ['skyblue', 'lightcoral', 'lightgreen', 'gold', 'lightpink', 'lightcyan']
-        bars = ax.bar(model_names, roc_auc_scores, color=colors[:len(model_names)])
-        ax.set_ylabel('ROC-AUC Score')
-        ax.set_title('Сравнение ROC-AUC моделей')
+        colors = [
+            "skyblue",
+            "lightcoral",
+            "lightgreen",
+            "gold",
+            "lightpink",
+            "lightcyan",
+        ]
+        bars = ax.bar(model_names, roc_auc_scores, color=colors[: len(model_names)])
+        ax.set_ylabel("ROC-AUC Score")
+        ax.set_title("Сравнение ROC-AUC моделей")
         ax.set_ylim(0, 1)
 
         # Добавляем значения на столбцы
         for bar, score in zip(bars, roc_auc_scores):
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.01,
-                    f'{score:.4f}', ha='center', va='bottom', fontsize=9)
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height + 0.01,
+                f"{score:.4f}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
 
-        plt.xticks(rotation=45, ha='right')
+        plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
 
         plot_path = output_path / "validation_metrics_comparison.png"
@@ -290,14 +304,15 @@ def create_metrics_comparison_plot(
 
 
 def create_roc_curves_plot(
-        validation_results: List[Dict[str, Any]], output_path: Path
+    validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
     """Создает график ROC кривых без Tkinter."""
     print("  Создание ROC кривых...")
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from sklearn.metrics import auc
 
@@ -329,14 +344,15 @@ def create_roc_curves_plot(
 
 
 def create_pr_curves_plot(
-        validation_results: List[Dict[str, Any]], output_path: Path
+    validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
     """Создает график Precision-Recall кривых без Tkinter."""
     print("  Создание Precision-Recall кривых...")
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     try:
@@ -364,14 +380,15 @@ def create_pr_curves_plot(
 
 
 def create_confusion_matrices_plot(
-        validation_results: List[Dict[str, Any]], output_path: Path
+    validation_results: List[Dict[str, Any]], output_path: Path
 ) -> None:
     """Создает график матриц ошибок без Tkinter."""
     print("  Создание матриц ошибок...")
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -553,7 +570,9 @@ def create_data_validation_suite():
     """
     try:
         import great_expectations as gx
-        from great_expectations.core.expectation_configuration import ExpectationConfiguration
+        from great_expectations.core.expectation_configuration import (
+            ExpectationConfiguration,
+        )
 
         print("\nСоздание набора валидации данных Great Expectations...")
 
@@ -579,52 +598,46 @@ def create_data_validation_suite():
             # Базовые проверки существования колонок
             ExpectationConfiguration(
                 expectation_type="expect_column_to_exist",
-                kwargs={"column": "LIMIT_BAL"}
+                kwargs={"column": "LIMIT_BAL"},
             ),
             ExpectationConfiguration(
-                expectation_type="expect_column_to_exist",
-                kwargs={"column": "AGE"}
+                expectation_type="expect_column_to_exist", kwargs={"column": "AGE"}
             ),
             ExpectationConfiguration(
-                expectation_type="expect_column_to_exist",
-                kwargs={"column": "target"}
+                expectation_type="expect_column_to_exist", kwargs={"column": "target"}
             ),
-
             # Проверки на отсутствие NULL значений в ключевых колонках
             ExpectationConfiguration(
                 expectation_type="expect_column_values_to_not_be_null",
-                kwargs={"column": "LIMIT_BAL"}
+                kwargs={"column": "LIMIT_BAL"},
             ),
             ExpectationConfiguration(
                 expectation_type="expect_column_values_to_not_be_null",
-                kwargs={"column": "target"}
+                kwargs={"column": "target"},
             ),
-
             # Проверки диапазонов значений
             ExpectationConfiguration(
                 expectation_type="expect_column_values_to_be_between",
-                kwargs={"column": "AGE", "min_value": 18, "max_value": 100}
+                kwargs={"column": "AGE", "min_value": 18, "max_value": 100},
             ),
             ExpectationConfiguration(
                 expectation_type="expect_column_values_to_be_between",
-                kwargs={"column": "LIMIT_BAL", "min_value": 0, "max_value": 1000000}
+                kwargs={"column": "LIMIT_BAL", "min_value": 0, "max_value": 1000000},
             ),
-
             # Проверки категориальных значений
             ExpectationConfiguration(
                 expectation_type="expect_column_values_to_be_in_set",
-                kwargs={"column": "target", "value_set": [0, 1]}
+                kwargs={"column": "target", "value_set": [0, 1]},
             ),
             ExpectationConfiguration(
                 expectation_type="expect_column_values_to_be_in_set",
-                kwargs={"column": "SEX", "value_set": [1, 2]}
+                kwargs={"column": "SEX", "value_set": [1, 2]},
             ),
-
             # Дополнительные проверки для надежности
             ExpectationConfiguration(
                 expectation_type="expect_table_row_count_to_be_between",
-                kwargs={"min_value": 1, "max_value": 1000000}
-            )
+                kwargs={"min_value": 1, "max_value": 1000000},
+            ),
         ]
 
         # Добавление ожиданий в набор
@@ -651,13 +664,17 @@ def create_data_validation_suite():
         raise
 
 
-def validate_data_quality(df: pd.DataFrame, suite_name: str = "credit_scoring_data_suite"):
+def validate_data_quality(
+    df: pd.DataFrame, suite_name: str = "credit_scoring_data_suite"
+):
     """
     Выполняет валидацию качества данных с помощью Great Expectations.
     """
     try:
         import great_expectations as gx
-        from great_expectations.core.expectation_configuration import ExpectationConfiguration
+        from great_expectations.core.expectation_configuration import (
+            ExpectationConfiguration,
+        )
 
         print(f"\nВалидация качества данных с помощью {suite_name}...")
 
@@ -677,14 +694,28 @@ def validate_data_quality(df: pd.DataFrame, suite_name: str = "credit_scoring_da
             ExpectationConfiguration("expect_column_to_exist", {"column": "LIMIT_BAL"}),
             ExpectationConfiguration("expect_column_to_exist", {"column": "AGE"}),
             ExpectationConfiguration("expect_column_to_exist", {"column": "target"}),
-            ExpectationConfiguration("expect_column_values_to_not_be_null", {"column": "LIMIT_BAL"}),
-            ExpectationConfiguration("expect_column_values_to_not_be_null", {"column": "target"}),
-            ExpectationConfiguration("expect_column_values_to_be_between",
-                                     {"column": "AGE", "min_value": 18, "max_value": 100}),
-            ExpectationConfiguration("expect_column_values_to_be_between",
-                                     {"column": "LIMIT_BAL", "min_value": 0, "max_value": 1000000}),
-            ExpectationConfiguration("expect_column_values_to_be_in_set", {"column": "target", "value_set": [0, 1]}),
-            ExpectationConfiguration("expect_column_values_to_be_in_set", {"column": "SEX", "value_set": [1, 2]}),
+            ExpectationConfiguration(
+                "expect_column_values_to_not_be_null", {"column": "LIMIT_BAL"}
+            ),
+            ExpectationConfiguration(
+                "expect_column_values_to_not_be_null", {"column": "target"}
+            ),
+            ExpectationConfiguration(
+                "expect_column_values_to_be_between",
+                {"column": "AGE", "min_value": 18, "max_value": 100},
+            ),
+            ExpectationConfiguration(
+                "expect_column_values_to_be_between",
+                {"column": "LIMIT_BAL", "min_value": 0, "max_value": 1000000},
+            ),
+            ExpectationConfiguration(
+                "expect_column_values_to_be_in_set",
+                {"column": "target", "value_set": [0, 1]},
+            ),
+            ExpectationConfiguration(
+                "expect_column_values_to_be_in_set",
+                {"column": "SEX", "value_set": [1, 2]},
+            ),
         ]
 
         for exp in expectations:
@@ -738,7 +769,7 @@ def validate_data_quality(df: pd.DataFrame, suite_name: str = "credit_scoring_da
                 if not result.success:
                     unsuccessful_count += 1
                     exp_type = result.expectation_config.expectation_type
-                    column = result.expectation_config.kwargs.get('column', 'N/A')
+                    column = result.expectation_config.kwargs.get("column", "N/A")
                     print(f"  {unsuccessful_count}. {exp_type} (колонка: {column})")
         else:
             # Используем ASCII символ вместо Unicode для совместимости с кодировками
@@ -761,7 +792,9 @@ def validate_data_quality(df: pd.DataFrame, suite_name: str = "credit_scoring_da
         raise
 
 
-def generate_data_quality_report(validation_results, output_dir: str = "models/artifacts"):
+def generate_data_quality_report(
+    validation_results, output_dir: str = "models/artifacts"
+):
     """
     Генерирует отчет о качестве данных.
     """
@@ -773,20 +806,30 @@ def generate_data_quality_report(validation_results, output_dir: str = "models/a
 
     report_data = {
         "validation_success": validation_results.success,
-        "total_expectations": validation_results.statistics.get("evaluated_expectations", 0),
-        "successful_expectations": validation_results.statistics.get("successful_expectations", 0),
-        "unsuccessful_expectations": validation_results.statistics.get("unsuccessful_expectations", 0),
-        "failed_checks": []
+        "total_expectations": validation_results.statistics.get(
+            "evaluated_expectations", 0
+        ),
+        "successful_expectations": validation_results.statistics.get(
+            "successful_expectations", 0
+        ),
+        "unsuccessful_expectations": validation_results.statistics.get(
+            "unsuccessful_expectations", 0
+        ),
+        "failed_checks": [],
     }
 
     # Собираем информацию о неудачных проверках
-    if hasattr(validation_results, 'results'):
+    if hasattr(validation_results, "results"):
         for result in validation_results.results:
             if not result.success:
                 failed_check = {
                     "expectation_type": result.expectation_config.expectation_type,
                     "column": result.expectation_config.kwargs.get("column", "N/A"),
-                    "message": str(getattr(result, 'exception_info', {}).get('exception_message', 'N/A'))
+                    "message": str(
+                        getattr(result, "exception_info", {}).get(
+                            "exception_message", "N/A"
+                        )
+                    ),
                 }
                 report_data["failed_checks"].append(failed_check)
 
@@ -795,29 +838,31 @@ def generate_data_quality_report(validation_results, output_dir: str = "models/a
     report_path = output_path / "data_quality_report.csv"
 
     try:
-        report_df.to_csv(report_path, index=False, encoding='utf-8')
+        report_df.to_csv(report_path, index=False, encoding="utf-8")
         print(f"  CSV отчет сохранен: {report_path}")
     except Exception as e:
         print(f"  Ошибка при сохранении CSV отчета: {e}")
         # Пробуем сохранить без проблемных символов
-        report_df.to_csv(report_path, index=False, encoding='utf-8', errors='ignore')
+        report_df.to_csv(report_path, index=False, encoding="utf-8", errors="ignore")
 
     # Создаем текстовый отчет с правильной кодировкой
     text_report_path = output_path / "data_quality_report.txt"
     try:
-        with open(text_report_path, "w", encoding='utf-8') as f:
+        with open(text_report_path, "w", encoding="utf-8") as f:
             f.write("ОТЧЕТ О КАЧЕСТВЕ ДАННЫХ\n")
             f.write("=" * 50 + "\n\n")
 
-            f.write(f"Результат валидации: {'УСПЕШНО' if report_data['validation_success'] else 'НЕУДАЧА'}\n")
+            f.write(
+                f"Результат валидации: {'УСПЕШНО' if report_data['validation_success'] else 'НЕУДАЧА'}\n"
+            )
             f.write(f"Всего проверок: {report_data['total_expectations']}\n")
             f.write(f"Успешных: {report_data['successful_expectations']}\n")
             f.write(f"Неудачных: {report_data['unsuccessful_expectations']}\n\n")
 
-            if report_data['failed_checks']:
+            if report_data["failed_checks"]:
                 f.write("НЕУДАЧНЫЕ ПРОВЕРКИ:\n")
                 f.write("-" * 30 + "\n")
-                for i, check in enumerate(report_data['failed_checks'], 1):
+                for i, check in enumerate(report_data["failed_checks"], 1):
                     f.write(f"{i}. Тип проверки: {check['expectation_type']}\n")
                     f.write(f"   Колонка: {check['column']}\n")
                     f.write(f"   Сообщение: {check['message']}\n\n")
@@ -849,7 +894,7 @@ def main():
     try:
         # Объединяем признаки и целевую переменную для валидации
         train_data = X_train.copy()
-        train_data['target'] = y_train.values
+        train_data["target"] = y_train.values
 
         # Выполняем валидацию данных (набор создается внутри функции)
         data_validation_results = validate_data_quality(train_data)
@@ -867,8 +912,14 @@ def main():
             print(f"Ошибка при генерации отчета о качестве данных: {e}")
 
     # Проверяем успешность валидации данных
-    if data_validation_success and data_validation_results and data_validation_results.success:
-        print("\nВалидация данных завершена успешно! Продолжаем с валидацией моделей...")
+    if (
+        data_validation_success
+        and data_validation_results
+        and data_validation_results.success
+    ):
+        print(
+            "\nВалидация данных завершена успешно! Продолжаем с валидацией моделей..."
+        )
     else:
         print("\nВалидация данных не прошла. Прерываем выполнение.")
         return

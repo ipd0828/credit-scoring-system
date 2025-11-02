@@ -110,8 +110,10 @@ def run_custom_data_preparation() -> bool:
             [
                 sys.executable,
                 str(script_path),
-                "--data-path", str(data_path),
-                "--output-path", str(output_path)
+                "--data-path",
+                str(data_path),
+                "--output-path",
+                str(output_path),
             ],
             cwd=project_root,
             capture_output=True,
@@ -122,7 +124,9 @@ def run_custom_data_preparation() -> bool:
         end_time = time.time()
         duration = end_time - start_time
 
-        print(f"Подготовка данных с кастомными признаками завершена успешно за {duration:.1f} секунд")
+        print(
+            f"Подготовка данных с кастомными признаками завершена успешно за {duration:.1f} секунд"
+        )
 
         if result.stdout:
             print("\nВывод скрипта:")
@@ -135,9 +139,12 @@ def run_custom_data_preparation() -> bool:
         feature_info_path = output_path / "artifacts" / "feature_info.pkl"
         if feature_info_path.exists():
             import joblib
+
             feature_info = joblib.load(feature_info_path)
-            print(f"\nИспользованные признаки ({len(feature_info['application_features'])}):")
-            for feature in feature_info['application_features']:
+            print(
+                f"\nИспользованные признаки ({len(feature_info['application_features'])}):"
+            )
+            for feature in feature_info["application_features"]:
                 print(f"  - {feature}")
 
         return True
@@ -146,7 +153,9 @@ def run_custom_data_preparation() -> bool:
         end_time = time.time()
         duration = end_time - start_time
 
-        print(f"Подготовка данных с кастомными признаками завершена с ошибкой за {duration:.1f} секунд")
+        print(
+            f"Подготовка данных с кастомными признаками завершена с ошибкой за {duration:.1f} секунд"
+        )
         print(f"Код ошибки: {e.returncode}")
 
         if e.stdout:
@@ -163,7 +172,9 @@ def run_custom_data_preparation() -> bool:
         end_time = time.time()
         duration = end_time - start_time
 
-        print(f"Подготовка данных с кастомными признаками завершена с исключением за {duration:.1f} секунд")
+        print(
+            f"Подготовка данных с кастомными признаками завершена с исключением за {duration:.1f} секунд"
+        )
         print(f"Ошибка: {e}")
         return False
 
@@ -206,9 +217,7 @@ def check_data_exists() -> bool:
 
     if not data_path.exists():
         print(f"Исходные данные не найдены: {data_path}")
-        print(
-            "Пожалуйста, поместите файл UCI_Credit_Card.csv в папку data/raw/"
-        )
+        print("Пожалуйста, поместите файл UCI_Credit_Card.csv в папку data/raw/")
         return False
 
     print(f"Исходные данные найдены: {data_path}")
@@ -224,7 +233,7 @@ def create_directories() -> None:
         "models/trained_custom",
         "models/artifacts",
         "models/artifacts_custom",
-        "logs"
+        "logs",
     ]
 
     for directory in directories:
@@ -240,48 +249,63 @@ def update_training_scripts_for_custom_features():
     """
     try:
         # Обновляем пути в скрипте обучения и заменяем XGBoost на CatBoost
-        train_script_path = project_root / "scripts" / "model_training" / "train_models_custom.py"
+        train_script_path = (
+            project_root / "scripts" / "model_training" / "train_models_custom.py"
+        )
 
         if not train_script_path.exists():
             # Создаем кастомную версию скрипта обучения
-            original_script = project_root / "scripts" / "model_training" / "train_models.py"
+            original_script = (
+                project_root / "scripts" / "model_training" / "train_models.py"
+            )
             if original_script.exists():
-                content = original_script.read_text(encoding='utf-8')
+                content = original_script.read_text(encoding="utf-8")
                 # Заменяем пути на кастомные
-                content = content.replace('data/processed', 'data/processed_custom')
-                content = content.replace('models/trained', 'models/trained_custom')
-                content = content.replace('models/artifacts', 'models/artifacts_custom')
+                content = content.replace("data/processed", "data/processed_custom")
+                content = content.replace("models/trained", "models/trained_custom")
+                content = content.replace("models/artifacts", "models/artifacts_custom")
                 # Заменяем XGBoost на CatBoost
-                content = content.replace('xgboost', 'catboost')
-                content = content.replace('XGBoost', 'CatBoost')
-                content = content.replace('XGBClassifier', 'CatBoostClassifier')
-                train_script_path.write_text(content, encoding='utf-8')
+                content = content.replace("xgboost", "catboost")
+                content = content.replace("XGBoost", "CatBoost")
+                content = content.replace("XGBClassifier", "CatBoostClassifier")
+                train_script_path.write_text(content, encoding="utf-8")
                 print("✓ Создан train_models_custom.py с CatBoost")
 
         # Аналогично для скрипта подбора гиперпараметров
-        tuning_script_path = project_root / "scripts" / "model_training" / "hyperparameter_tuning_custom.py"
-        original_tuning_script = project_root / "scripts" / "model_training" / "hyperparameter_tuning.py"
+        tuning_script_path = (
+            project_root
+            / "scripts"
+            / "model_training"
+            / "hyperparameter_tuning_custom.py"
+        )
+        original_tuning_script = (
+            project_root / "scripts" / "model_training" / "hyperparameter_tuning.py"
+        )
         if original_tuning_script.exists() and not tuning_script_path.exists():
-            content = original_tuning_script.read_text(encoding='utf-8')
-            content = content.replace('data/processed', 'data/processed_custom')
-            content = content.replace('models/trained', 'models/trained_custom')
-            content = content.replace('models/artifacts', 'models/artifacts_custom')
+            content = original_tuning_script.read_text(encoding="utf-8")
+            content = content.replace("data/processed", "data/processed_custom")
+            content = content.replace("models/trained", "models/trained_custom")
+            content = content.replace("models/artifacts", "models/artifacts_custom")
             # Заменяем XGBoost на CatBoost
-            content = content.replace('xgboost', 'catboost')
-            content = content.replace('XGBoost', 'CatBoost')
-            content = content.replace('XGBClassifier', 'CatBoostClassifier')
-            tuning_script_path.write_text(content, encoding='utf-8')
+            content = content.replace("xgboost", "catboost")
+            content = content.replace("XGBoost", "CatBoost")
+            content = content.replace("XGBClassifier", "CatBoostClassifier")
+            tuning_script_path.write_text(content, encoding="utf-8")
             print("✓ Создан hyperparameter_tuning_custom.py с CatBoost")
 
         # Для валидации просто обновляем пути
-        validation_script_path = project_root / "scripts" / "model_training" / "validation_custom.py"
-        original_validation_script = project_root / "scripts" / "model_training" / "validation.py"
+        validation_script_path = (
+            project_root / "scripts" / "model_training" / "validation_custom.py"
+        )
+        original_validation_script = (
+            project_root / "scripts" / "model_training" / "validation.py"
+        )
         if original_validation_script.exists() and not validation_script_path.exists():
-            content = original_validation_script.read_text(encoding='utf-8')
-            content = content.replace('data/processed', 'data/processed_custom')
-            content = content.replace('models/trained', 'models/trained_custom')
-            content = content.replace('models/artifacts', 'models/artifacts_custom')
-            validation_script_path.write_text(content, encoding='utf-8')
+            content = original_validation_script.read_text(encoding="utf-8")
+            content = content.replace("data/processed", "data/processed_custom")
+            content = content.replace("models/trained", "models/trained_custom")
+            content = content.replace("models/artifacts", "models/artifacts_custom")
+            validation_script_path.write_text(content, encoding="utf-8")
             print("✓ Создан validation_custom.py")
 
         return True
@@ -296,12 +320,14 @@ def cleanup_old_xgboost_models():
     try:
         models_dirs = [
             project_root / "models" / "trained_custom",
-            project_root / "models" / "trained"
+            project_root / "models" / "trained",
         ]
 
         xgboost_files = [
-            "xgboost.pkl", "tuned_xgbclassifier.pkl",
-            "best_model.pkl", "best_tuned_model.pkl"
+            "xgboost.pkl",
+            "tuned_xgbclassifier.pkl",
+            "best_model.pkl",
+            "best_tuned_model.pkl",
         ]
 
         for models_dir in models_dirs:
@@ -321,6 +347,7 @@ def check_catboost_installation():
     """Проверяет установлен ли CatBoost."""
     try:
         import catboost
+
         print("✅ CatBoost установлен")
         return True
     except ImportError:
@@ -334,7 +361,15 @@ def main():
     parser.add_argument(
         "--steps",
         nargs="+",
-        choices=["eda", "data_prep", "training", "tuning", "validation", "all", "custom"],
+        choices=[
+            "eda",
+            "data_prep",
+            "training",
+            "tuning",
+            "validation",
+            "all",
+            "custom",
+        ],
         default=["all"],
         help="Шаги для выполнения (по умолчанию: all)",
     )
@@ -342,12 +377,14 @@ def main():
         "--skip-checks", action="store_true", help="Пропустить проверки"
     )
     parser.add_argument(
-        "--use-custom-features", action="store_true",
-        help="Использовать кастомные признаки (только признаки доступные при заявке)"
+        "--use-custom-features",
+        action="store_true",
+        help="Использовать кастомные признаки (только признаки доступные при заявке)",
     )
     parser.add_argument(
-        "--cleanup-old", action="store_true",
-        help="Очистить старые модели XGBoost перед запуском"
+        "--cleanup-old",
+        action="store_true",
+        help="Очистить старые модели XGBoost перед запуском",
     )
 
     args = parser.parse_args()
@@ -423,10 +460,26 @@ def main():
 
     descriptions = {
         "eda": "Исследовательский анализ данных (EDA)",
-        "data_prep": "Подготовка данных с кастомными признаками" if args.use_custom_features else "Предобработка данных",
-        "training": "Обучение моделей CatBoost на кастомных признаках" if args.use_custom_features else "Обучение моделей CatBoost",
-        "tuning": "Подбор гиперпараметров CatBoost для кастомных признаков" if args.use_custom_features else "Подбор гиперпараметров CatBoost",
-        "validation": "Валидация моделей CatBoost с кастомными признаками" if args.use_custom_features else "Валидация моделей CatBoost",
+        "data_prep": (
+            "Подготовка данных с кастомными признаками"
+            if args.use_custom_features
+            else "Предобработка данных"
+        ),
+        "training": (
+            "Обучение моделей CatBoost на кастомных признаках"
+            if args.use_custom_features
+            else "Обучение моделей CatBoost"
+        ),
+        "tuning": (
+            "Подбор гиперпараметров CatBoost для кастомных признаков"
+            if args.use_custom_features
+            else "Подбор гиперпараметров CatBoost"
+        ),
+        "validation": (
+            "Валидация моделей CatBoost с кастомными признаками"
+            if args.use_custom_features
+            else "Валидация моделей CatBoost"
+        ),
     }
 
     # Выполняем шаги
@@ -462,7 +515,9 @@ def main():
                 if response.lower() not in ["y", "yes", "да", "д"]:
                     break
             else:
-                print(f"\nАвтоматически продолжаем выполнение после ошибки в шаге '{step}'...")
+                print(
+                    f"\nАвтоматически продолжаем выполнение после ошибки в шаге '{step}'..."
+                )
 
     # Выводим итоговый отчет
     print(f"\n{'=' * 60}")
@@ -479,7 +534,9 @@ def main():
         print("\n🎉 Пайплайн выполнен успешно!")
         print("\n📁 Результаты сохранены в:")
         if args.use_custom_features:
-            print("  - data/processed_custom/ - обработанные данные с кастомными признаками")
+            print(
+                "  - data/processed_custom/ - обработанные данные с кастомными признаками"
+            )
             print("  - models/trained_custom/ - обученные модели CatBoost")
             print("  - models/artifacts_custom/ - графики и отчеты")
             print(f"\n🔧 Использовано 6 признаков доступных при заявке")

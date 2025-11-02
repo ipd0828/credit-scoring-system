@@ -255,7 +255,7 @@ def train_and_evaluate_models(
 
 
 def create_comparison_plot(
-        results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
+    results: Dict[str, Dict[str, Any]], output_dir: str = "models/artifacts"
 ) -> None:
     """
     Создает график сравнения моделей без Tkinter.
@@ -268,7 +268,8 @@ def create_comparison_plot(
 
     # Используем неинтерактивный бэкенд ДО импорта matplotlib
     import matplotlib
-    matplotlib.use('Agg')  # Важно: использовать Agg бэкенд
+
+    matplotlib.use("Agg")  # Важно: использовать Agg бэкенд
     import matplotlib.pyplot as plt
 
     # Подготавливаем данные для графика
@@ -294,16 +295,21 @@ def create_comparison_plot(
         accuracy_scores = metric_values["accuracy"]
 
         # Создаем bar plot
-        bars = ax.bar(model_names, accuracy_scores, color=['skyblue', 'lightcoral'])
-        ax.set_ylabel('Accuracy')
-        ax.set_title('Сравнение точности моделей')
+        bars = ax.bar(model_names, accuracy_scores, color=["skyblue", "lightcoral"])
+        ax.set_ylabel("Accuracy")
+        ax.set_title("Сравнение точности моделей")
         ax.set_ylim(0, 1)
 
         # Добавляем значения на столбцы
         for bar, score in zip(bars, accuracy_scores):
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2., height + 0.01,
-                    f'{score:.3f}', ha='center', va='bottom')
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height + 0.01,
+                f"{score:.3f}",
+                ha="center",
+                va="bottom",
+            )
 
         plt.xticks(rotation=45)
         plt.tight_layout()
@@ -337,7 +343,8 @@ def create_roc_curves(
 
     # Используем неинтерактивный бэкенд
     import matplotlib
-    matplotlib.use('Agg')
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from sklearn.metrics import roc_curve, auc
 

@@ -159,7 +159,7 @@ class TestAPI:
         # Тест с отсутствующими полями
         request_data = {
             "annual_inc": 50000.0,
-            "emp_length": "5 years"
+            "emp_length": "5 years",
             # Отсутствуют обязательные поля
         }
 

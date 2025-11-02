@@ -33,7 +33,7 @@ warnings.filterwarnings("ignore")
 
 
 def load_and_sample_data(
-        data_path: str, sample_frac: float = 0.9, random_state: int = 42
+    data_path: str, sample_frac: float = 0.9, random_state: int = 42
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Загружает данные и создает репрезентативную выборку."""
     print("Загрузка данных...")
@@ -50,7 +50,7 @@ def load_and_sample_data(
 
 
 def analyze_representativeness(
-        df: pd.DataFrame, df_sample: pd.DataFrame
+    df: pd.DataFrame, df_sample: pd.DataFrame
 ) -> Dict[str, Any]:
     """Анализирует репрезентативность выборки по сравнению с полным датасетом."""
     print("\n" + "=" * 60)
@@ -146,17 +146,32 @@ def analyze_representativeness(
 
     if not report_numeric.empty and "Оценка" in report_numeric.columns:
         good_numeric = len(report_numeric[report_numeric["Оценка"] == "Хорошо"])
-        warning_numeric = len(report_numeric[report_numeric["Оценка"] == "Удовлетворительно"])
+        warning_numeric = len(
+            report_numeric[report_numeric["Оценка"] == "Удовлетворительно"]
+        )
         bad_numeric = len(report_numeric[report_numeric["Оценка"] == "Тревожно"])
 
     good_cat = 0
     warning_cat = 0
     bad_cat = 0
 
-    if not report_categorical_summary.empty and "Оценка" in report_categorical_summary.columns:
-        good_cat = len(report_categorical_summary[report_categorical_summary["Оценка"] == "Хорошо"])
-        warning_cat = len(report_categorical_summary[report_categorical_summary["Оценка"] == "Удовлетворительно"])
-        bad_cat = len(report_categorical_summary[report_categorical_summary["Оценка"] == "Тревожно"])
+    if (
+        not report_categorical_summary.empty
+        and "Оценка" in report_categorical_summary.columns
+    ):
+        good_cat = len(
+            report_categorical_summary[report_categorical_summary["Оценка"] == "Хорошо"]
+        )
+        warning_cat = len(
+            report_categorical_summary[
+                report_categorical_summary["Оценка"] == "Удовлетворительно"
+            ]
+        )
+        bad_cat = len(
+            report_categorical_summary[
+                report_categorical_summary["Оценка"] == "Тревожно"
+            ]
+        )
 
     total_good = good_numeric + good_cat
     total_warning = warning_numeric + warning_cat
@@ -181,11 +196,15 @@ def analyze_representativeness(
     print(f"  Тревожно: {total_bad}")
 
     if total_good > total_warning and total_good > total_bad:
-        verdict = "Полная репрезентативность: большинство признаков имеют малые отклонения."
+        verdict = (
+            "Полная репрезентативность: большинство признаков имеют малые отклонения."
+        )
     elif total_warning > total_good and total_warning > total_bad:
         verdict = "Частичная репрезентативность: преобладают умеренные отклонения."
     elif total_bad > total_good and total_bad > total_warning:
-        verdict = "Низкая репрезентативность: значительная часть признаков сильно искажена."
+        verdict = (
+            "Низкая репрезентативность: значительная часть признаков сильно искажена."
+        )
     else:
         verdict = "Неоднозначная репрезентативность: нет чёткого преобладания."
 
@@ -211,8 +230,16 @@ def find_target_column(df: pd.DataFrame) -> str:
 
     # Список ожидаемых имён целевой переменной
     preferred = [
-        "loancondition", "loan_status", "loanstatus", "isdefault", "default",
-        "badloan", "chargedoff", "defaulter", "target", "y",
+        "loancondition",
+        "loan_status",
+        "loanstatus",
+        "isdefault",
+        "default",
+        "badloan",
+        "chargedoff",
+        "defaulter",
+        "target",
+        "y",
     ]
 
     # 1) Проверяем точное совпадение
@@ -223,7 +250,10 @@ def find_target_column(df: pd.DataFrame) -> str:
 
     # 2) Ищем по ключевым словам
     for c, cn in norm.items():
-        if any(k in cn for k in ["default", "charg", "loanstatus", "badloan", "loancondition"]):
+        if any(
+            k in cn
+            for k in ["default", "charg", "loanstatus", "badloan", "loancondition"]
+        ):
             return c
 
     # 3) Ищем первый бинарный столбец
@@ -253,7 +283,7 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
     print(f"Тип данных целевой переменной: {dtype}")
 
     # Если целевая переменная уже числовая и бинарная, используем как есть
-    if dtype in ['int64', 'float64', 'int32', 'float32']:
+    if dtype in ["int64", "float64", "int32", "float32"]:
         unique_vals = df_clean[target_col].unique()
         print(f"Уникальные числовые значения: {unique_vals}")
 
@@ -261,7 +291,9 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
             print("Целевая переменная уже бинарная (0 и 1), используем как есть")
             df_clean["target"] = df_clean[target_col].astype(int)
         else:
-            print("Целевая переменная числовая, но не бинарная. Создаем бинарную версию.")
+            print(
+                "Целевая переменная числовая, но не бинарная. Создаем бинарную версию."
+            )
             df_clean["target"] = (df_clean[target_col] > 0).astype(int)
     else:
         # Оригинальная логика для текстовых статусов
@@ -275,14 +307,23 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
 
             # Хорошие займы -> 0
             good_indicators = [
-                "fully paid", "current", "good loan", "no default",
-                "paid", "completed"
+                "fully paid",
+                "current",
+                "good loan",
+                "no default",
+                "paid",
+                "completed",
             ]
 
             # Плохие займы -> 1
             bad_indicators = [
-                "charged off", "default", "late", "bad loan",
-                "delinquent", "chargedoff", "defaulted"
+                "charged off",
+                "default",
+                "late",
+                "bad loan",
+                "delinquent",
+                "chargedoff",
+                "defaulted",
             ]
 
             # Проверяем хорошие займы
@@ -296,9 +337,9 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
                     return 1
 
             # Для числовых значений в текстовом формате
-            if status_str in ['0', '0.0']:
+            if status_str in ["0", "0.0"]:
                 return 0
-            elif status_str in ['1', '1.0']:
+            elif status_str in ["1", "1.0"]:
                 return 1
             else:
                 print(f"  Неизвестный статус: '{status}' -> помечен как плохой займ")
@@ -311,12 +352,18 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
     total = len(df_clean)
 
     print(f"\nОбщее количество записей: {total:,}")
-    print(f"Хорошие займы (0): {value_counts.get(0, 0):,} ({value_counts.get(0, 0) / total * 100:.1f}%)")
-    print(f"Плохие займы (1): {value_counts.get(1, 0):,} ({value_counts.get(1, 0) / total * 100:.1f}%)")
+    print(
+        f"Хорошие займы (0): {value_counts.get(0, 0):,} ({value_counts.get(0, 0) / total * 100:.1f}%)"
+    )
+    print(
+        f"Плохие займы (1): {value_counts.get(1, 0):,} ({value_counts.get(1, 0) / total * 100:.1f}%)"
+    )
 
     # Проверяем, что есть записи в обоих классах
     if 0 not in value_counts.index or 1 not in value_counts.index:
-        print("\nПРЕДУПРЕЖДЕНИЕ: Отсутствуют записи одного из классов целевой переменной!")
+        print(
+            "\nПРЕДУПРЕЖДЕНИЕ: Отсутствуют записи одного из классов целевой переменной!"
+        )
         if 0 not in value_counts.index:
             print("  - Нет хороших займов (класс 0)")
         if 1 not in value_counts.index:
@@ -329,7 +376,7 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
         "good_loans_pct": value_counts.get(0, 0) / total * 100,
         "bad_loans_pct": value_counts.get(1, 0) / total * 100,
         "target_col": target_col,
-        "original_statuses": unique_statuses
+        "original_statuses": unique_statuses,
     }
 
 
@@ -344,7 +391,7 @@ def check_for_target_leakage(df: pd.DataFrame, target_col: str = "target"):
     results = {
         "duplicate_columns": [],
         "high_correlation_features": [],
-        "problematic_columns": []
+        "problematic_columns": [],
     }
 
     # 1. Проверяем точные дубликаты столбцов
@@ -378,7 +425,9 @@ def check_for_target_leakage(df: pd.DataFrame, target_col: str = "target"):
                     correlations[col] = abs(corr)
 
             # Сортируем по убыванию корреляции
-            sorted_correlations = sorted(correlations.items(), key=lambda x: x[1], reverse=True)
+            sorted_correlations = sorted(
+                correlations.items(), key=lambda x: x[1], reverse=True
+            )
 
             print("   Топ-10 признаков по корреляции с целевой переменной:")
             for i, (col, corr) in enumerate(sorted_correlations[:10], 1):
@@ -398,13 +447,21 @@ def check_for_target_leakage(df: pd.DataFrame, target_col: str = "target"):
     # 3. Проверяем конкретные проблемные столбцы
     print("\n3. Проверка конкретных проблемных столбцов:")
     problematic_columns = []
-    suspicious_names = ['default.payment.next.month', 'y', 'default', 'is_bad', 'is_default']
+    suspicious_names = [
+        "default.payment.next.month",
+        "y",
+        "default",
+        "is_bad",
+        "is_default",
+    ]
 
     for col in df.columns:
         if col != target_col and col in suspicious_names:
             if df[col].nunique() == 2 and set(df[col].unique()).issubset({0, 1}):
                 problematic_columns.append(col)
-                print(f"   ВНИМАНИЕ: ПОДОЗРИТЕЛЬНЫЙ: '{col}' - вероятно дублирует целевую переменную")
+                print(
+                    f"   ВНИМАНИЕ: ПОДОЗРИТЕЛЬНЫЙ: '{col}' - вероятно дублирует целевую переменную"
+                )
 
     if problematic_columns:
         results["problematic_columns"] = problematic_columns
@@ -413,7 +470,11 @@ def check_for_target_leakage(df: pd.DataFrame, target_col: str = "target"):
 
     # 4. Рекомендации
     print("\n4. РЕКОМЕНДАЦИИ:")
-    if results["duplicate_columns"] or results["high_correlation_features"] or results["problematic_columns"]:
+    if (
+        results["duplicate_columns"]
+        or results["high_correlation_features"]
+        or results["problematic_columns"]
+    ):
         print("   ОБНАРУЖЕНЫ ПОТЕНЦИАЛЬНЫЕ ПРОБЛЕМЫ:")
 
         if results["duplicate_columns"]:
@@ -427,7 +488,9 @@ def check_for_target_leakage(df: pd.DataFrame, target_col: str = "target"):
                 print(f"     * '{col}': {corr:.4f}")
 
         if results["problematic_columns"]:
-            print("   - Удалите подозрительные столбцы, которые могут дублировать целевую переменную:")
+            print(
+                "   - Удалите подозрительные столбцы, которые могут дублировать целевую переменную:"
+            )
             for col in results["problematic_columns"]:
                 print(f"     * '{col}'")
     else:
@@ -476,7 +539,7 @@ def run_detailed_eda(df: pd.DataFrame) -> Dict[str, Any]:
 
 
 def save_eda_results(
-        results: Dict[str, Any], output_dir: str = "data/processed"
+    results: Dict[str, Any], output_dir: str = "data/processed"
 ) -> None:
     """Сохраняет результаты EDA."""
     output_path = Path(output_dir)
@@ -502,14 +565,32 @@ def save_eda_results(
 
         # Сохраняем отчет о проверке утечек
         if "leakage_check" in results["target_analysis"]:
-            leakage_df = pd.DataFrame({
-                'problem_type': ['duplicate_columns', 'high_correlation', 'problematic_columns'],
-                'count': [
-                    len(results["target_analysis"]["leakage_check"]["duplicate_columns"]),
-                    len(results["target_analysis"]["leakage_check"]["high_correlation_features"]),
-                    len(results["target_analysis"]["leakage_check"]["problematic_columns"])
-                ]
-            })
+            leakage_df = pd.DataFrame(
+                {
+                    "problem_type": [
+                        "duplicate_columns",
+                        "high_correlation",
+                        "problematic_columns",
+                    ],
+                    "count": [
+                        len(
+                            results["target_analysis"]["leakage_check"][
+                                "duplicate_columns"
+                            ]
+                        ),
+                        len(
+                            results["target_analysis"]["leakage_check"][
+                                "high_correlation_features"
+                            ]
+                        ),
+                        len(
+                            results["target_analysis"]["leakage_check"][
+                                "problematic_columns"
+                            ]
+                        ),
+                    ],
+                }
+            )
             leakage_df.to_csv(output_path / "leakage_check_report.csv", index=False)
 
     print(f"\nРезультаты EDA сохранены в папку: {output_path}")

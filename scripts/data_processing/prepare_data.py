@@ -53,7 +53,9 @@ class DataProcessor:
             elif self.data_path.suffix == ".parquet":
                 df = pd.read_parquet(self.data_path)
             else:
-                raise ValueError(f"Неподдерживаемый формат файла: {self.data_path.suffix}")
+                raise ValueError(
+                    f"Неподдерживаемый формат файла: {self.data_path.suffix}"
+                )
         except Exception as e:
             raise Exception(f"Ошибка загрузки данных: {e}")
 
@@ -88,7 +90,9 @@ class DataProcessor:
 
         missing_after = df.isnull().sum().sum()
         if missing_before - missing_after > 0:
-            logger.info(f"Заполнено {missing_before - missing_after} пропущенных значений")
+            logger.info(
+                f"Заполнено {missing_before - missing_after} пропущенных значений"
+            )
 
         return df
 
@@ -99,7 +103,9 @@ class DataProcessor:
         # Для датасета UCI Credit Card используем существующую целевую колонку
         if "default.payment.next.month" in df.columns:
             df["target"] = df["default.payment.next.month"]
-            logger.info("Используется существующая целевая колонка 'default.payment.next.month'")
+            logger.info(
+                "Используется существующая целевая колонка 'default.payment.next.month'"
+            )
         elif "loan_status" in df.columns:
             # Маппинг статуса кредита в бинарную целевую переменную
             def map_loan_status(status):
@@ -127,7 +133,9 @@ class DataProcessor:
 
         # Проверка наличия обоих классов
         if len(target_dist) < 2:
-            logger.warning(f"Присутствует только один класс в целевой переменной: {target_dist.index[0]}")
+            logger.warning(
+                f"Присутствует только один класс в целевой переменной: {target_dist.index[0]}"
+            )
 
         return df
 
@@ -136,45 +144,63 @@ class DataProcessor:
         logger.info("Создание кастомных признаков...")
 
         # Используем только 6 признаков из заявки
-        custom_features = df[['LIMIT_BAL', 'SEX', 'EDUCATION', 'MARRIAGE', 'AGE', 'PAY_0']].copy()
+        custom_features = df[
+            ["LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0"]
+        ].copy()
 
         # Переименование колонок для единообразия
-        custom_features = custom_features.rename(columns={
-            'LIMIT_BAL': 'limit_bal',
-            'SEX': 'sex',
-            'EDUCATION': 'education_new',
-            'MARRIAGE': 'marriage_new',
-            'AGE': 'age',
-            'PAY_0': 'pay_new'
-        })
+        custom_features = custom_features.rename(
+            columns={
+                "LIMIT_BAL": "limit_bal",
+                "SEX": "sex",
+                "EDUCATION": "education_new",
+                "MARRIAGE": "marriage_new",
+                "AGE": "age",
+                "PAY_0": "pay_new",
+            }
+        )
 
         # Обработка категориальных признаков
         # Пол: 1=мужской, 2=женский (оставляем как есть)
         # Семейное положение: перекодируем в 0=неизвестно, 1=женат/замужем, 2=не женат/не замужем, 3=другое
-        custom_features['marriage_new'] = custom_features['marriage_new'].map({
-            0: 0,  # неизвестно
-            1: 1,  # женат/замужем
-            2: 2,  # не женат/не замужем
-            3: 3  # другое
-        }).fillna(0)  # все остальные значения маппим в неизвестно
+        custom_features["marriage_new"] = (
+            custom_features["marriage_new"]
+            .map(
+                {
+                    0: 0,  # неизвестно
+                    1: 1,  # женат/замужем
+                    2: 2,  # не женат/не замужем
+                    3: 3,  # другое
+                }
+            )
+            .fillna(0)
+        )  # все остальные значения маппим в неизвестно
 
         # Образование: перекодируем в 1=аспирантура, 2=университет, 3=средняя школа, 4=другое
-        custom_features['education_new'] = custom_features['education_new'].map({
-            1: 1,  # аспирантура
-            2: 2,  # университет
-            3: 3,  # средняя школа
-            4: 4,  # другое
-            5: 0,  # неизвестно
-            6: 0  # неизвестно
-        }).fillna(0)  # все остальные значения маппим в неизвестно
+        custom_features["education_new"] = (
+            custom_features["education_new"]
+            .map(
+                {
+                    1: 1,  # аспирантура
+                    2: 2,  # университет
+                    3: 3,  # средняя школа
+                    4: 4,  # другое
+                    5: 0,  # неизвестно
+                    6: 0,  # неизвестно
+                }
+            )
+            .fillna(0)
+        )  # все остальные значения маппим в неизвестно
 
         # Статус платежей: оставляем как есть (-2, -1, 0, 1, 2, ...) но обеспечиваем правильный формат
-        custom_features['pay_new'] = custom_features['pay_new'].astype(int)
+        custom_features["pay_new"] = custom_features["pay_new"].astype(int)
 
         logger.info(f"Создано {len(custom_features.columns)} кастомных признаков")
         return custom_features
 
-    def select_custom_features(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+    def select_custom_features(
+        self, df: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.Series]:
         """Выбор только 6 кастомных признаков из заявки."""
         logger.info("Выбор кастомных признаков...")
 
@@ -182,14 +208,20 @@ class DataProcessor:
         X_custom = self.engineer_custom_features(df)
         y = df["target"].copy()
 
-        logger.info(f"Выбрано {len(X_custom.columns)} кастомных признаков: {list(X_custom.columns)}")
+        logger.info(
+            f"Выбрано {len(X_custom.columns)} кастомных признаков: {list(X_custom.columns)}"
+        )
         logger.info(f"Размер целевой переменной: {y.shape}")
 
         return X_custom, y
 
-    def preprocess_custom_features(self, X: pd.DataFrame, fit: bool = True) -> pd.DataFrame:
+    def preprocess_custom_features(
+        self, X: pd.DataFrame, fit: bool = True
+    ) -> pd.DataFrame:
         """Предобработка кастомных признаков - БЕЗ МАСШТАБИРОВАНИЯ для tree-based моделей."""
-        logger.info("Предобработка кастомных признаков (без масштабирования для tree-based моделей)...")
+        logger.info(
+            "Предобработка кастомных признаков (без масштабирования для tree-based моделей)..."
+        )
 
         X_processed = X.copy()
 
@@ -198,11 +230,19 @@ class DataProcessor:
         # - Мы хотим сохранить исходные распределения признаков
         # - Только Logistic Regression может выиграть, но мы обработаем это отдельно
 
-        logger.info("Масштабирование признаков пропущено (оптимально для tree-based моделей)")
+        logger.info(
+            "Масштабирование признаков пропущено (оптимально для tree-based моделей)"
+        )
 
         return X_processed
 
-    def split_data(self, X: pd.DataFrame, y: pd.Series, test_size: float = 0.2, random_state: int = 42):
+    def split_data(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        test_size: float = 0.2,
+        random_state: int = 42,
+    ):
         """
         Разделение данных на обучающую и тестовую выборки с сохранением распределения целевой переменной.
         """
@@ -210,7 +250,9 @@ class DataProcessor:
 
         # Проверка распределения целевой переменной
         target_distribution = y.value_counts().sort_index()
-        logger.info(f"Распределение целевой переменной: {target_distribution.to_dict()}")
+        logger.info(
+            f"Распределение целевой переменной: {target_distribution.to_dict()}"
+        )
 
         # Используем стратификацию только если есть оба класса
         if len(target_distribution) >= 2:
@@ -222,27 +264,39 @@ class DataProcessor:
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=random_state, stratify=None
             )
-            logger.info("Использовано случайное разделение (только один класс в целевой переменной)")
+            logger.info(
+                "Использовано случайное разделение (только один класс в целевой переменной)"
+            )
 
         # Логирование результатов разделения
-        train_good_pct = (y_train == 0).sum() / len(y_train) * 100 if len(y_train) > 0 else 0
-        train_bad_pct = (y_train == 1).sum() / len(y_train) * 100 if len(y_train) > 0 else 0
-        test_good_pct = (y_test == 0).sum() / len(y_test) * 100 if len(y_test) > 0 else 0
+        train_good_pct = (
+            (y_train == 0).sum() / len(y_train) * 100 if len(y_train) > 0 else 0
+        )
+        train_bad_pct = (
+            (y_train == 1).sum() / len(y_train) * 100 if len(y_train) > 0 else 0
+        )
+        test_good_pct = (
+            (y_test == 0).sum() / len(y_test) * 100 if len(y_test) > 0 else 0
+        )
         test_bad_pct = (y_test == 1).sum() / len(y_test) * 100 if len(y_test) > 0 else 0
 
-        logger.info(f"Обучающая выборка: {train_good_pct:.1f}% хороших, {train_bad_pct:.1f}% плохих")
-        logger.info(f"Тестовая выборка: {test_good_pct:.1f}% хороших, {test_bad_pct:.1f}% плохих")
+        logger.info(
+            f"Обучающая выборка: {train_good_pct:.1f}% хороших, {train_bad_pct:.1f}% плохих"
+        )
+        logger.info(
+            f"Тестовая выборка: {test_good_pct:.1f}% хороших, {test_bad_pct:.1f}% плохих"
+        )
         logger.info(f"Размер обучающей выборки: {len(X_train):,}")
         logger.info(f"Размер тестовой выборки: {len(X_test):,}")
 
         return X_train, X_test, y_train, y_test
 
     def save_processed_data(
-            self,
-            X_train: pd.DataFrame,
-            X_test: pd.DataFrame,
-            y_train: pd.Series,
-            y_test: pd.Series,
+        self,
+        X_train: pd.DataFrame,
+        X_test: pd.DataFrame,
+        y_train: pd.Series,
+        y_test: pd.Series,
     ):
         """Сохранение обработанных данных."""
         logger.info("Сохранение обработанных данных...")
@@ -256,17 +310,19 @@ class DataProcessor:
 
             # Сохранение информации о признаках для справки
             feature_info = {
-                'application_features': list(X_train.columns),
-                'feature_descriptions': {
-                    'limit_bal': 'Кредитный лимит в TWD',
-                    'sex': 'Пол (1=мужской, 2=женский)',
-                    'marriage_new': 'Семейное положение (0=неизвестно, 1=женат/замужем, 2=не женат/не замужем, 3=другое)',
-                    'age': 'Возраст в годах',
-                    'pay_new': 'Статус платежей (-2=не использовался, -1=оплачен вовремя, 0=револьверный кредит, 1=задержка 1 месяц, ...)',
-                    'education_new': 'Уровень образования (1=аспирантура, 2=университет, 3=средняя школа, 4=другое)'
-                }
+                "application_features": list(X_train.columns),
+                "feature_descriptions": {
+                    "limit_bal": "Кредитный лимит в TWD",
+                    "sex": "Пол (1=мужской, 2=женский)",
+                    "marriage_new": "Семейное положение (0=неизвестно, 1=женат/замужем, 2=не женат/не замужем, 3=другое)",
+                    "age": "Возраст в годах",
+                    "pay_new": "Статус платежей (-2=не использовался, -1=оплачен вовремя, 0=револьверный кредит, 1=задержка 1 месяц, ...)",
+                    "education_new": "Уровень образования (1=аспирантура, 2=университет, 3=средняя школа, 4=другое)",
+                },
             }
-            joblib.dump(feature_info, self.output_path / "artifacts" / "feature_info.pkl")
+            joblib.dump(
+                feature_info, self.output_path / "artifacts" / "feature_info.pkl"
+            )
 
             logger.info("Обработанные данные успешно сохранены")
 
@@ -301,8 +357,12 @@ class DataProcessor:
             self.save_processed_data(X_train, X_test, y_train, y_test)
 
             logger.info("Пайплайн обработки данных успешно завершен!")
-            logger.info(f"Использовано {len(X_processed.columns)} кастомных признаков из заявки")
-            logger.info("Масштабирование признаков не применялось (оптимально для tree-based моделей)")
+            logger.info(
+                f"Использовано {len(X_processed.columns)} кастомных признаков из заявки"
+            )
+            logger.info(
+                "Масштабирование признаков не применялось (оптимально для tree-based моделей)"
+            )
 
         except Exception as e:
             logger.error(f"Пайплайн обработки данных завершился ошибкой: {e}")
@@ -314,7 +374,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Подготовка данных для модели кредитного скоринга"
     )
-    parser.add_argument("--data-path", required=True, help="Путь к файлу с сырыми данными")
+    parser.add_argument(
+        "--data-path", required=True, help="Путь к файлу с сырыми данными"
+    )
     parser.add_argument(
         "--output-path", required=True, help="Путь для сохранения обработанных данных"
     )

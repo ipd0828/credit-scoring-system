@@ -52,7 +52,7 @@ class HealthCheckResponse(BaseModel):
 app = FastAPI(
     title="Credit Scoring API",
     description="API для кредитного скоринга с ML моделью",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(
@@ -116,7 +116,7 @@ def load_model():
 
 def prepare_features_for_prediction(features, model_type):
     """Подготовка признаков для предсказания в зависимости от типа модели."""
-    if 'catboost' in model_type.lower():
+    if "catboost" in model_type.lower():
         # Для CatBoost преобразуем категориальные признаки в правильный формат
         features_cat = features.astype(object)
         categorical_indices = [1, 2, 4, 5]  # sex, marriage_new, pay_new, education_new
@@ -155,7 +155,9 @@ async def predict_credit_score(request: CreditScoringRequest):
     try:
         # Валидация входных данных
         if not (10000 <= request.limit_bal <= 1000000):
-            raise HTTPException(400, "Кредитный лимит должен быть от 10,000 до 1,000,000 TWD")
+            raise HTTPException(
+                400, "Кредитный лимит должен быть от 10,000 до 1,000,000 TWD"
+            )
         if request.sex not in [1, 2]:
             raise HTTPException(400, "Пол должен быть 1 (мужской) или 2 (женский)")
         if request.marriage_new not in [0, 1, 2, 3]:
@@ -171,14 +173,18 @@ async def predict_credit_score(request: CreditScoringRequest):
             raise HTTPException(500, "Модель не загружена")
 
         # Создаем массив признаков
-        features = np.array([[
-            request.limit_bal,
-            request.sex,
-            request.marriage_new,
-            request.age,
-            request.pay_new,
-            request.education_new
-        ]])
+        features = np.array(
+            [
+                [
+                    request.limit_bal,
+                    request.sex,
+                    request.marriage_new,
+                    request.age,
+                    request.pay_new,
+                    request.education_new,
+                ]
+            ]
+        )
 
         # Определяем тип модели
         model_type = type(model).__name__
@@ -214,15 +220,17 @@ async def predict_credit_score(request: CreditScoringRequest):
             probability=probability,
             confidence=confidence,
             risk_score=risk_score,
-            model_version="2.0.0-catboost" if "catboost" in model_type.lower() else "2.0.0-ml",
+            model_version=(
+                "2.0.0-catboost" if "catboost" in model_type.lower() else "2.0.0-ml"
+            ),
             features_importance={
                 "limit_bal": 0.25,
                 "age": 0.20,
                 "pay_new": 0.20,
                 "education_new": 0.15,
                 "marriage_new": 0.10,
-                "sex": 0.10
-            }
+                "sex": 0.10,
+            },
         )
 
         # Рассчитываем время выполнения
@@ -278,14 +286,14 @@ async def get_model_info():
                 "marriage_new - Семейное положение (0-3)",
                 "age - Возраст (21-79)",
                 "pay_new - Статус платежей (-1,0,1)",
-                "education_new - Образование (1-4)"
+                "education_new - Образование (1-4)",
             ],
             "test_prediction": 1,
             "test_probability": [0.22, 0.78],
             "model_loaded": True,
             "scaler_loaded": False,  # Устанавливаем в False
             "last_updated": datetime.now(timezone.utc).isoformat(),
-            "using_catboost": "catboost" in model_type.lower()
+            "using_catboost": "catboost" in model_type.lower(),
         }
     else:
         return {
@@ -296,7 +304,7 @@ async def get_model_info():
             "model_loaded": False,
             "scaler_loaded": False,
             "last_updated": datetime.now(timezone.utc).isoformat(),
-            "using_catboost": False
+            "using_catboost": False,
         }
 
 

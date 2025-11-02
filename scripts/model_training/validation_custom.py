@@ -38,7 +38,7 @@ def prepare_data_for_catboost(X_data):
     X_prepared = X_data.copy()
 
     # Категориальные признаки
-    categorical_features = ['sex', 'marriage_new', 'pay_new', 'education_new']
+    categorical_features = ["sex", "marriage_new", "pay_new", "education_new"]
 
     # Преобразуем в целые числа, затем в строки
     for feature in categorical_features:
@@ -68,7 +68,7 @@ def load_models_and_data():
         model_name = model_file.stem
 
         # Пропускаем служебные файлы
-        if any(skip in model_name for skip in ['scaler', 'preprocessor', 'feature']):
+        if any(skip in model_name for skip in ["scaler", "preprocessor", "feature"]):
             continue
 
         try:
@@ -90,7 +90,7 @@ def validate_single_model(model_name, model, X_test, y_test):
 
     try:
         # Для CatBoost моделей используем подготовленные данные
-        if 'catboost' in model_name.lower():
+        if "catboost" in model_name.lower():
             X_test_prepared = prepare_data_for_catboost(X_test)
             y_pred = model.predict(X_test_prepared)
             y_proba = model.predict_proba(X_test_prepared)[:, 1]
@@ -164,14 +164,16 @@ def create_validation_plots(validation_results, output_dir="models/artifacts_cus
         values = [r["metrics"][metric] for r in valid_results]
         plt.bar(x + i * width, values, width, label=metric, alpha=0.8)
 
-    plt.xlabel('Модели')
-    plt.ylabel('Значения метрик')
-    plt.title('Сравнение метрик моделей')
-    plt.xticks(x + width * 2, model_names, rotation=45, ha='right')
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.xlabel("Модели")
+    plt.ylabel("Значения метрик")
+    plt.title("Сравнение метрик моделей")
+    plt.xticks(x + width * 2, model_names, rotation=45, ha="right")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(output_path / "validation_metrics_comparison.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        output_path / "validation_metrics_comparison.png", dpi=300, bbox_inches="tight"
+    )
     plt.close()
 
     # 2. ROC кривые
@@ -179,7 +181,9 @@ def create_validation_plots(validation_results, output_dir="models/artifacts_cus
     for result in valid_results:
         fpr, tpr, _ = result["roc_curve"]
         roc_auc = result["metrics"]["roc_auc"]
-        plt.plot(fpr, tpr, label=f"{result['model_name']} (AUC = {roc_auc:.3f})", linewidth=2)
+        plt.plot(
+            fpr, tpr, label=f"{result['model_name']} (AUC = {roc_auc:.3f})", linewidth=2
+        )
 
     plt.plot([0, 1], [0, 1], "k--", label="Случайный классификатор", alpha=0.5)
     plt.xlabel("False Positive Rate")
@@ -195,7 +199,12 @@ def create_validation_plots(validation_results, output_dir="models/artifacts_cus
     for result in valid_results:
         precision, recall, _ = result["pr_curve"]
         ap = result["metrics"]["average_precision"]
-        plt.plot(recall, precision, label=f"{result['model_name']} (AP = {ap:.3f})", linewidth=2)
+        plt.plot(
+            recall,
+            precision,
+            label=f"{result['model_name']} (AP = {ap:.3f})",
+            linewidth=2,
+        )
 
     plt.xlabel("Recall")
     plt.ylabel("Precision")
@@ -214,19 +223,23 @@ def create_validation_plots(validation_results, output_dir="models/artifacts_cus
 
     for i, result in enumerate(valid_results):
         cm = result["confusion_matrix"]
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[i])
+        sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=axes[i])
         axes[i].set_title(f'{result["model_name"]}\nМатрица ошибок')
-        axes[i].set_xlabel('Предсказанный класс')
-        axes[i].set_ylabel('Истинный класс')
+        axes[i].set_xlabel("Предсказанный класс")
+        axes[i].set_ylabel("Истинный класс")
 
     plt.tight_layout()
-    plt.savefig(output_path / "validation_confusion_matrices.png", dpi=300, bbox_inches="tight")
+    plt.savefig(
+        output_path / "validation_confusion_matrices.png", dpi=300, bbox_inches="tight"
+    )
     plt.close()
 
     print("  Графики валидации сохранены")
 
 
-def generate_validation_report(validation_results, output_dir="models/artifacts_custom"):
+def generate_validation_report(
+    validation_results, output_dir="models/artifacts_custom"
+):
     """Генерирует детальный отчет о валидации."""
     print("\nГенерация отчета о валидации...")
 
@@ -245,14 +258,16 @@ def generate_validation_report(validation_results, output_dir="models/artifacts_
 
     for result in valid_results:
         row = {"Модель": result["model_name"]}
-        row.update({
-            "Accuracy": result["metrics"]["accuracy"],
-            "Precision": result["metrics"]["precision"],
-            "Recall": result["metrics"]["recall"],
-            "F1-score": result["metrics"]["f1"],
-            "ROC-AUC": result["metrics"]["roc_auc"],
-            "Avg Precision": result["metrics"]["average_precision"]
-        })
+        row.update(
+            {
+                "Accuracy": result["metrics"]["accuracy"],
+                "Precision": result["metrics"]["precision"],
+                "Recall": result["metrics"]["recall"],
+                "F1-score": result["metrics"]["f1"],
+                "ROC-AUC": result["metrics"]["roc_auc"],
+                "Avg Precision": result["metrics"]["average_precision"],
+            }
+        )
         report_data.append(row)
 
     # Создаем DataFrame
@@ -287,11 +302,11 @@ def generate_validation_report(validation_results, output_dir="models/artifacts_
 
         f.write("РЕКОМЕНДАЦИИ:\n")
         f.write("-" * 50 + "\n")
-        if best_model['Recall'] < 0.5:
+        if best_model["Recall"] < 0.5:
             f.write("⚠️  Низкий Recall - модель плохо обнаруживает дефолты\n")
-        if best_model['Precision'] < 0.4:
+        if best_model["Precision"] < 0.4:
             f.write("⚠️  Низкий Precision - много ложных срабатываний\n")
-        if best_model['ROC-AUC'] > 0.7:
+        if best_model["ROC-AUC"] > 0.7:
             f.write("✅ Хорошее качество модели (ROC-AUC > 0.7)\n")
         else:
             f.write("⚠️  ROC-AUC ниже 0.7 - требуется улучшение модели\n")
@@ -303,9 +318,9 @@ def generate_validation_report(validation_results, output_dir="models/artifacts_
 
 def print_validation_summary(validation_results):
     """Выводит краткую сводку результатов валидации."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("СВОДКА ВАЛИДАЦИИ МОДЕЛЕЙ")
-    print("="*60)
+    print("=" * 60)
 
     # Фильтруем успешные результаты
     valid_results = [r for r in validation_results if "error" not in r]
@@ -368,9 +383,9 @@ def main():
         # Выводим сводку
         print_validation_summary(validation_results)
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("ВАЛИДАЦИЯ МОДЕЛЕЙ ЗАВЕРШЕНА УСПЕШНО")
-        print("="*60)
+        print("=" * 60)
 
     except Exception as e:
         print(f"Ошибка при валидации моделей: {e}")

@@ -67,9 +67,9 @@ class DataProcessor:
         column_mapping = {}
         for col in df.columns:
             # Приводим к нижнему регистру и заменяем не-буквенно-цифровые символы на _
-            normalized = re.sub(r'[^a-z0-9]+', '_', str(col).lower().strip())
+            normalized = re.sub(r"[^a-z0-9]+", "_", str(col).lower().strip())
             # Убираем лишние подчеркивания
-            normalized = re.sub(r'_+', '_', normalized).strip('_')
+            normalized = re.sub(r"_+", "_", normalized).strip("_")
             column_mapping[col] = normalized
 
         # Переименовываем колонки
@@ -99,9 +99,7 @@ class DataProcessor:
         norm = {c: re.sub(r"[^a-z0-9]+", "", c.lower()) for c in df.columns}
 
         # Паттерны для целевой переменной
-        предпочтительные = [
-            "defaultpaymentnextmonth", "default", "target", "y"
-        ]
+        предпочтительные = ["defaultpaymentnextmonth", "default", "target", "y"]
 
         # 1) Точное совпадение
         for паттерн in предпочтительные:
@@ -145,14 +143,14 @@ class DataProcessor:
         logger.info("Создание признаков...")
 
         # Теперь все колонки в snake_case, можно использовать напрямую
-        df['education_new'] = np.where(df['education'] >= 4, 4, df['education'])
+        df["education_new"] = np.where(df["education"] >= 4, 4, df["education"])
         logger.info("Создан education_new")
 
-        df['marriage_new'] = np.where(df['marriage'] >= 3, 3, df['marriage'])
+        df["marriage_new"] = np.where(df["marriage"] >= 3, 3, df["marriage"])
         logger.info("Создан marriage_new")
 
         # Преобразование статусов платежей
-        pay_columns = ['pay_0', 'pay_2', 'pay_3', 'pay_4', 'pay_5', 'pay_6']
+        pay_columns = ["pay_0", "pay_2", "pay_3", "pay_4", "pay_5", "pay_6"]
 
         has_positive_list = []
         has_zero_list = []
@@ -166,14 +164,13 @@ class DataProcessor:
             has_any_positive = pd.concat(has_positive_list, axis=1).any(axis=1)
             has_any_zero = pd.concat(has_zero_list, axis=1).any(axis=1)
 
-            df['pay_new'] = np.where(
-                has_any_positive, 1,
-                np.where(has_any_zero, 0, -1)
-            )
+            df["pay_new"] = np.where(has_any_positive, 1, np.where(has_any_zero, 0, -1))
             logger.info("Создан pay_new из колонок платежей")
         else:
-            df['pay_new'] = 0
-            logger.warning("Не найдены колонки платежей, используем значение по умолчанию")
+            df["pay_new"] = 0
+            logger.warning(
+                "Не найдены колонки платежей, используем значение по умолчанию"
+            )
 
         logger.info("Создание признаков завершено")
         return df
@@ -184,7 +181,12 @@ class DataProcessor:
 
         # Признаки, которые можно получить при подаче заявки (все в snake_case)
         application_features = [
-            'limit_bal', 'sex', 'marriage_new', 'age', 'pay_new', 'education_new'
+            "limit_bal",
+            "sex",
+            "marriage_new",
+            "age",
+            "pay_new",
+            "education_new",
         ]
 
         # Проверка доступных признаков
@@ -193,7 +195,9 @@ class DataProcessor:
         if not available_features:
             raise ValueError("Нет доступных признаков заявки")
 
-        logger.info(f"Выбрано {len(available_features)} признаков заявки: {available_features}")
+        logger.info(
+            f"Выбрано {len(available_features)} признаков заявки: {available_features}"
+        )
 
         X = df[available_features].copy()
         y = df["target"].copy()
@@ -213,7 +217,9 @@ class DataProcessor:
             if fit:
                 скалер = StandardScaler()
                 if X_обработанные[колонка].nunique() > 1:
-                    X_обработанные[колонка] = скалер.fit_transform(X_обработанные[[колонка]])
+                    X_обработанные[колонка] = скалер.fit_transform(
+                        X_обработанные[[колонка]]
+                    )
                 self.scalers[колонка] = скалер
 
         return X_обработанные
@@ -246,10 +252,12 @@ class DataProcessor:
 
         # Сохранение информации о признаках
         информация_о_признаках = {
-            'application_features': list(X_train.columns),
-            'target_column': 'target'
+            "application_features": list(X_train.columns),
+            "target_column": "target",
         }
-        joblib.dump(информация_о_признаках, self.output_path / "artifacts" / "feature_info.pkl")
+        joblib.dump(
+            информация_о_признаках, self.output_path / "artifacts" / "feature_info.pkl"
+        )
 
         logger.info("Обработанные данные успешно сохранены")
 
@@ -294,9 +302,15 @@ class DataProcessor:
 
 def main():
     """Основная функция."""
-    parser = argparse.ArgumentParser(description="Подготовка данных для модели кредитного скоринга")
-    parser.add_argument("--data-path", required=True, help="Путь к файлу с сырыми данными")
-    parser.add_argument("--output-path", required=True, help="Путь для сохранения обработанных данных")
+    parser = argparse.ArgumentParser(
+        description="Подготовка данных для модели кредитного скоринга"
+    )
+    parser.add_argument(
+        "--data-path", required=True, help="Путь к файлу с сырыми данными"
+    )
+    parser.add_argument(
+        "--output-path", required=True, help="Путь для сохранения обработанных данных"
+    )
 
     args = parser.parse_args()
 

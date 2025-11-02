@@ -227,10 +227,10 @@ def create_preprocessor(
 
 
 def split_data(
-        df: pd.DataFrame,
-        target_col: str = "target",
-        test_size: float = 0.2,
-        random_state: int = 42,
+    df: pd.DataFrame,
+    target_col: str = "target",
+    test_size: float = 0.2,
+    random_state: int = 42,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """
     Разделяет данные на обучающую и тестовую выборки.
@@ -283,8 +283,12 @@ def split_data(
     test_good_pct, test_bad_pct = get_safe_distribution(y_test)
 
     print(f"\nРаспределение целевой переменной:")
-    print(f"  Обучающая выборка: {train_good_pct:.1f}% хороших, {train_bad_pct:.1f}% плохих")
-    print(f"  Тестовая выборка: {test_good_pct:.1f}% хороших, {test_bad_pct:.1f}% плохих")
+    print(
+        f"  Обучающая выборка: {train_good_pct:.1f}% хороших, {train_bad_pct:.1f}% плохих"
+    )
+    print(
+        f"  Тестовая выборка: {test_good_pct:.1f}% хороших, {test_bad_pct:.1f}% плохих"
+    )
 
     # Дополнительная информация о классах
     print(f"\nДетализация классов:")
@@ -382,7 +386,9 @@ def main():
     for class_val, count in target_distribution.items():
         class_name = "хороших" if class_val == 0 else "плохих"
         percentage = count / len(df) * 100
-        print(f"  Класс {class_val} ({class_name}): {count} записей ({percentage:.1f}%)")
+        print(
+            f"  Класс {class_val} ({class_name}): {count} записей ({percentage:.1f}%)"
+        )
 
     # Если только один класс, предупреждаем пользователя
     if len(target_distribution) == 1:

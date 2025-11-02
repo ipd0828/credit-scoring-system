@@ -355,12 +355,12 @@ class DataQualityMonitor:
                 categorical_info["categorical_columns"][col] = {
                     "unique_count": unique_count,
                     "unique_ratio": round(unique_ratio, 4),
-                    "most_common": data[col].mode().iloc[0]
-                    if not data[col].mode().empty
-                    else None,
-                    "most_common_count": data[col].value_counts().iloc[0]
-                    if not data[col].empty
-                    else 0,
+                    "most_common": (
+                        data[col].mode().iloc[0] if not data[col].mode().empty else None
+                    ),
+                    "most_common_count": (
+                        data[col].value_counts().iloc[0] if not data[col].empty else 0
+                    ),
                 }
 
                 # Высокая кардинальность (много уникальных значений)

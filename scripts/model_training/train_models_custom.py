@@ -88,7 +88,7 @@ def prepare_data_for_catboost(X_train, X_test):
     X_test_cat = X_test.copy()
 
     # Категориальные признаки
-    categorical_features = ['sex', 'marriage_new', 'pay_new', 'education_new']
+    categorical_features = ["sex", "marriage_new", "pay_new", "education_new"]
 
     # Преобразуем в целые числа, затем в строки
     for feature in categorical_features:
@@ -110,14 +110,10 @@ def create_models(X_train, y_train):
 
     models = {
         "Logistic Regression": LogisticRegression(
-            random_state=42,
-            max_iter=1000,
-            class_weight='balanced'
+            random_state=42, max_iter=1000, class_weight="balanced"
         ),
         "Random Forest": RandomForestClassifier(
-            random_state=42,
-            n_estimators=100,
-            class_weight='balanced'
+            random_state=42, n_estimators=100, class_weight="balanced"
         ),
     }
 
@@ -128,12 +124,12 @@ def create_models(X_train, y_train):
             verbose=False,
             thread_count=-1,
             # БАЛАНСИРОВКА КЛАССОВ - ВАЖНО!
-            auto_class_weights='Balanced',
-            loss_function='Logloss',
-            eval_metric='AUC',
+            auto_class_weights="Balanced",
+            loss_function="Logloss",
+            eval_metric="AUC",
             iterations=100,
             learning_rate=0.1,
-            depth=6
+            depth=6,
         )
 
     print(f"Создано {len(models)} моделей:")
@@ -149,7 +145,7 @@ def evaluate_model(model, X_test, y_test, model_name):
     y_pred = model.predict(X_test)
 
     # Для CatBoost используем predict_proba с учетом особенностей
-    if hasattr(model, 'predict_proba'):
+    if hasattr(model, "predict_proba"):
         y_proba = model.predict_proba(X_test)
         # Проверяем форму predict_proba
         if len(y_proba.shape) > 1 and y_proba.shape[1] > 1:
@@ -168,7 +164,7 @@ def evaluate_model(model, X_test, y_test, model_name):
 
     # Кросс-валидация
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    cv_scores = cross_val_score(model, X_test, y_test, cv=cv, scoring='roc_auc')
+    cv_scores = cross_val_score(model, X_test, y_test, cv=cv, scoring="roc_auc")
 
     print(f"{model_name} завершён:")
     print(f"  Точность (Accuracy): {accuracy:.4f}")
@@ -179,13 +175,13 @@ def evaluate_model(model, X_test, y_test, model_name):
     print(f"  CV AUC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
     return {
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-        'roc_auc': roc_auc,
-        'cv_auc_mean': cv_scores.mean(),
-        'cv_auc_std': cv_scores.std()
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "roc_auc": roc_auc,
+        "cv_auc_mean": cv_scores.mean(),
+        "cv_auc_std": cv_scores.std(),
     }
 
 
@@ -196,7 +192,9 @@ def train_and_evaluate_models(X_train, X_test, y_train, y_test):
     print("=" * 60)
 
     # Подготавливаем данные для CatBoost
-    X_train_cat, X_test_cat, categorical_features = prepare_data_for_catboost(X_train, X_test)
+    X_train_cat, X_test_cat, categorical_features = prepare_data_for_catboost(
+        X_train, X_test
+    )
 
     models = create_models(X_train, y_train)
     results = {}
@@ -208,13 +206,18 @@ def train_and_evaluate_models(X_train, X_test, y_train, y_test):
             # Обучение модели
             if name == "CatBoost":
                 # Получаем индексы категориальных признаков
-                cat_features_indices = [i for i, col in enumerate(X_train_cat.columns) if col in categorical_features]
+                cat_features_indices = [
+                    i
+                    for i, col in enumerate(X_train_cat.columns)
+                    if col in categorical_features
+                ]
 
                 model.fit(
-                    X_train_cat, y_train,
+                    X_train_cat,
+                    y_train,
                     cat_features=cat_features_indices,
                     verbose=False,
-                    plot=False
+                    plot=False,
                 )
 
                 # Оценка на подготовленных данных для CatBoost
@@ -249,7 +252,7 @@ def save_results(results):
 
     # Создаем DataFrame с результатами
     results_df = pd.DataFrame(results).T
-    results_df = results_df.sort_values('roc_auc', ascending=False)
+    results_df = results_df.sort_values("roc_auc", ascending=False)
 
     # Сохраняем результаты
     output_dir = Path("models/trained_custom")
@@ -266,9 +269,12 @@ def save_results(results):
 
     # Копируем лучшую модель
     import shutil
+
     shutil.copy2(best_model_path, final_best_path)
     print(f"  Лучшая модель сохранена: {final_best_path}")
-    print(f"  Лучшая модель: {best_model_name} (ROC-AUC: {results_df.iloc[0]['roc_auc']:.4f})")
+    print(
+        f"  Лучшая модель: {best_model_name} (ROC-AUC: {results_df.iloc[0]['roc_auc']:.4f})"
+    )
 
     return results_df
 
@@ -300,7 +306,9 @@ def main():
             print(f"\nДетальные метрики лучшей модели:")
             print(f"  Precision: {best_model_metrics['precision']:.4f}")
             print(f"  Recall: {best_model_metrics['recall']:.4f}")
-            print(f"  CV AUC: {best_model_metrics['cv_auc_mean']:.4f} ± {best_model_metrics['cv_auc_std']:.4f}")
+            print(
+                f"  CV AUC: {best_model_metrics['cv_auc_mean']:.4f} ± {best_model_metrics['cv_auc_std']:.4f}"
+            )
         else:
             print("Нет успешно обученных моделей")
 

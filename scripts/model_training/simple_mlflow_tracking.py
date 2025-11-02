@@ -94,15 +94,21 @@ class SimpleTracker:
             data_info = {
                 "train_samples": len(X_train),
                 "test_samples": len(X_test),
-                "features": X_train.shape[1]
-                if hasattr(X_train, "shape")
-                else len(X_train.columns),
-                "train_positive_rate": y_train.mean()
-                if hasattr(y_train, "mean")
-                else sum(y_train) / len(y_train),
-                "test_positive_rate": y_test.mean()
-                if hasattr(y_test, "mean")
-                else sum(y_test) / len(y_test),
+                "features": (
+                    X_train.shape[1]
+                    if hasattr(X_train, "shape")
+                    else len(X_train.columns)
+                ),
+                "train_positive_rate": (
+                    y_train.mean()
+                    if hasattr(y_train, "mean")
+                    else sum(y_train) / len(y_train)
+                ),
+                "test_positive_rate": (
+                    y_test.mean()
+                    if hasattr(y_test, "mean")
+                    else sum(y_test) / len(y_test)
+                ),
             }
             for key, value in data_info.items():
                 self.log_param(f"data_{key}", value)
