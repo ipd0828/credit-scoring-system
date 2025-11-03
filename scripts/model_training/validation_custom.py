@@ -8,23 +8,23 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_recall_curve,
     precision_score,
     recall_score,
-    f1_score,
     roc_auc_score,
-    average_precision_score,
-    confusion_matrix,
     roc_curve,
-    precision_recall_curve,
-    classification_report,
 )
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 # Добавляем корневую папку проекта в путь
 project_root = Path(__file__).parent.parent.parent

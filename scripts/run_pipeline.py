@@ -10,10 +10,10 @@
 """
 
 import argparse
+import shutil
 import subprocess
 import sys
 import time
-import shutil
 from pathlib import Path
 from typing import List, Optional
 

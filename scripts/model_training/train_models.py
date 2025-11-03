@@ -14,11 +14,11 @@ from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import joblib
+import matplotlib.pyplot as plt
 
 # Импорты для визуализации
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -346,7 +346,7 @@ def create_roc_curves(
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from sklearn.metrics import roc_curve, auc
+    from sklearn.metrics import auc, roc_curve
 
     if not probabilities:
         print("Нет вероятностей для построения ROC-кривых")

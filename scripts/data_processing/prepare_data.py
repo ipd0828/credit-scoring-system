@@ -8,7 +8,7 @@ import argparse
 import logging
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import joblib
 import numpy as np

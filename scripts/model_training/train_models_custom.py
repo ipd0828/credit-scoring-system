@@ -5,7 +5,7 @@
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import joblib
 import numpy as np
@@ -21,7 +21,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 # Добавляем корневую папку проекта в путь
 project_root = Path(__file__).parent.parent.parent

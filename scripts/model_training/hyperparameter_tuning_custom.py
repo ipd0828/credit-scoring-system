@@ -5,20 +5,20 @@
 import sys
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.model_selection import (
     GridSearchCV,
     StratifiedKFold,
     cross_val_score,
     train_test_split,
 )
-from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
 from sklearn.pipeline import Pipeline
 
 # Добавляем корневую папку проекта в путь

@@ -7,10 +7,10 @@
 
 import argparse
 import logging
+import re
 import warnings
 from pathlib import Path
 from typing import Any, Dict, Tuple
-import re
 
 import joblib
 import numpy as np
