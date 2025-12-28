@@ -1,0 +1,414 @@
+# .github/workflows/credit-scoring-ci-cd.yml
+name: Credit Scoring CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'api/**'
+      - 'frontend/**'
+      - 'scripts/**'
+      - 'requirements*.txt'
+      - 'Dockerfile*'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Еженедельный запуск пайплайна
+    - cron: '0 2 * * 1'  # Каждый понедельник в 2:00 UTC
+  workflow_dispatch:
+    inputs:
+      run_type:
+        description: 'Тип запуска'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - build
+          - full-pipeline
+      environment:
+        description: 'Окружение'
+        required: false
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  PYTHON_VERSION: '3.12'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # --- STAGE 1: Code Quality & Security ---
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install black isort flake8 mypy bandit safety pre-commit
+
+    - name: Check formatting (Black)
+      run: black --check --diff .
+
+    - name: Check imports (isort)
+      run: isort --check-only --diff .
+
+    - name: Linting (flake8)
+      run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Type checking (mypy)
+      run: mypy api/ scripts/ --ignore-missing-imports
+
+    - name: Security scan (bandit)
+      run: bandit -r api/ scripts/ -f json -o bandit-report.json
+
+    - name: Dependency security scan (safety)
+      run: safety check --json --output safety-report.json
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+        retention-days: 30
+
+  # --- STAGE 2: Testing ---
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-api.txt
+        pip install -r requirements-frontend.txt
+        pip install pytest pytest-cov pytest-asyncio
+
+    - name: Create test directories
+      run: |
+        mkdir -p logs
+        mkdir -p models/onnx_final
+        touch models/onnx_final/best_model.onnx
+
+    - name: Run unit tests
+      run: |
+        pytest tests/unit/ -v \
+          --cov=api \
+          --cov=scripts \
+          --cov-report=xml \
+          --cov-report=html \
+          --junitxml=test-results.xml
+
+    - name: Run integration tests
+      run: |
+        pytest tests/integration/ -v \
+          --junitxml=integration-results.xml
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.python-version }}
+        path: |
+          test-results.xml
+          integration-results.xml
+          htmlcov/
+        retention-days: 30
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-${{ matrix.python-version }}
+
+  # --- STAGE 3: Build & Scan Docker Images ---
+  build-and-scan:
+    name: Build & Scan Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event.inputs.run_type == 'build'
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha,prefix=,suffix=,format=short
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+
+    - name: Build API image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: Dockerfile.api
+        tags: ${{ steps.meta.outputs.tags }}-api
+        labels: ${{ steps.meta.outputs.labels }}
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build Frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: Dockerfile.frontend
+        tags: ${{ steps.meta.outputs.tags }}-frontend
+        labels: ${{ steps.meta.outputs.labels }}
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan images for vulnerabilities
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Upload vulnerability scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # --- STAGE 4: ML Pipeline ---
+  ml-pipeline:
+    name: ML Pipeline
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'schedule' || github.event.inputs.run_type == 'full-pipeline'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install ML dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Create directories
+      run: |
+        mkdir -p data/raw data/processed models/trained models/onnx_final logs
+
+    - name: Download dataset
+      run: |
+        # Здесь должна быть логика загрузки данных
+        # Для примера создаем тестовые данные
+        python -c "
+        import pandas as pd
+        import numpy as np
+        np.random.seed(42)
+        n_samples = 10000
+        data = {
+            'limit_bal': np.random.normal(150000, 50000, n_samples).clip(10000, 1000000),
+            'sex': np.random.choice([1, 2], n_samples),
+            'marriage_new': np.random.choice([0, 1, 2, 3], n_samples),
+            'age': np.random.normal(40, 10, n_samples).clip(21, 79).astype(int),
+            'pay_new': np.random.choice([-1, 0, 1], n_samples),
+            'education_new': np.random.choice([1, 2, 3, 4], n_samples),
+            'default_payment_next_month': np.random.choice([0, 1], n_samples, p=[0.78, 0.22])
+        }
+        df = pd.DataFrame(data)
+        df.to_csv('data/raw/UCI_Credit_Card.csv', index=False)
+        print(f'Создан датасет: {df.shape}')
+        "
+
+    - name: Run ML pipeline
+      run: |
+        python scripts/run_pipeline.py \
+          --use-custom-features \
+          --steps data_prep,training,tuning,validation,onnx \
+          --timeout-tune 1800 \
+          --timeout-train 1200
+
+    - name: Upload model artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ml-artifacts
+        path: |
+          models/trained/
+          models/onnx_final/
+          models/artifacts/
+        retention-days: 30
+
+    - name: Upload to MLflow
+      if: success()
+      run: |
+        # Здесь интеграция с MLflow
+        echo "ML artifacts готовы для MLflow"
+        # mlflow models register ...
+
+  # --- STAGE 5: Deploy to Kubernetes ---
+  deploy:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: [build-and-scan, ml-pipeline]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ml-artifacts
+        path: models/
+
+    - name: Set up Kubernetes
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Set up Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'latest'
+
+    - name: Configure Kubernetes
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+    - name: Deploy to Kubernetes
+      run: |
+        # Применяем манифесты
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/secrets.yaml
+        kubectl apply -f k8s/api-deployment.yaml
+        kubectl apply -f k8s/frontend-deployment.yaml
+        kubectl apply -f k8s/service.yaml
+        kubectl apply -f k8s/ingress.yaml
+        
+        # Ждем развертывания
+        kubectl wait --for=condition=available \
+          --timeout=300s \
+          deployment/credit-scoring-api \
+          -n credit-scoring
+
+    - name: Run smoke tests
+      run: |
+        # Smoke tests для API
+        kubectl rollout status deployment/credit-scoring-api -n credit-scoring
+        API_URL=$(kubectl get svc credit-scoring-api -n credit-scoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        
+        echo "Running smoke tests on $API_URL"
+        curl -f http://$API_URL:8000/api/v1/health || exit 1
+        curl -f http://$API_URL:8000/docs || exit 1
+
+    - name: Run performance tests
+      if: success()
+      run: |
+        echo "Running performance tests..."
+        # Здесь можно добавить k6 или artillery тесты
+
+  # --- STAGE 6: Monitoring & Notifications ---
+  monitor:
+    name: Monitor Deployment
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: always()
+    steps:
+    - name: Check deployment status
+      if: needs.deploy.result == 'success'
+      run: |
+        echo "✅ Развертывание успешно завершено"
+        echo "🌐 API: https://api.credit-scoring.example.com"
+        echo "🎨 Frontend: https://app.credit-scoring.example.com"
+        echo "📊 Grafana: https://monitor.credit-scoring.example.com"
+
+    - name: Send Slack notification
+      uses: 8398a7/action-slack@v3
+      if: always()
+      with:
+        status: ${{ job.status }}
+        author_name: GitHub Actions
+        fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Create deployment report
+      if: always()
+      run: |
+        echo "# Deployment Report" > deployment-report.md
+        echo "## Status: ${{ job.status }}" >> deployment-report.md
+        echo "## Job: ${{ github.job }}" >> deployment-report.md
+        echo "## Run: ${{ github.run_id }}" >> deployment-report.md
+        echo "## Commit: ${{ github.sha }}" >> deployment-report.md
+        date >> deployment-report.md
+
+    - name: Upload deployment report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: deployment-report
+        path: deployment-report.md
+        retention-days: 30

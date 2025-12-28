@@ -1,36 +1,48 @@
-# Dockerfile для ML пайплайна
-FROM python:3.11-slim
+# Dockerfile.ml - Для ML пайплайна с DVC
+FROM python:3.12-slim as builder
 
-# Устанавливаем системные зависимости
+# Установка системных зависимостей для ML
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
-    make \
-    libffi-dev \
-    libssl-dev \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем requirements.txt
+# Копирование зависимостей
 COPY requirements.txt .
 
-# Устанавливаем Python зависимости
-RUN pip install --no-cache-dir -r requirements.txt
+# Установка зависимостей в виртуальное окружение
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код
+# --- Production stage ---
+FROM python:3.12-slim
+
+# Установка DVC с S3 поддержкой
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копирование виртуального окружения из builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Создание пользователя приложения
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+WORKDIR /app
+
+# Копирование кода
 COPY . .
 
-# Создаем необходимые директории
-RUN mkdir -p data/raw data/processed models/trained models/artifacts logs
+# Настройка DVC
+RUN mkdir -p /app/.dvc && \
+    chown -R appuser:appuser /app
 
-# Устанавливаем права доступа
-RUN chmod +x scripts/run_pipeline.py
-
-# Переменные окружения
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
+USER appuser
 
 # Команда по умолчанию
-CMD ["python", "scripts/run_pipeline.py"]
+CMD ["python", "scripts/run_pipeline.py --use-custom-features"]

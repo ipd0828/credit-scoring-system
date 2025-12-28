@@ -1,0 +1,63 @@
+# monitoring/prometheus/rules.yml
+groups:
+  - name: credit_scoring_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: mlops
+        annotations:
+          summary: "Высокий уровень ошибок в API"
+          description: "Более 5% запросов возвращают ошибку 5xx"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: mlops
+        annotations:
+          summary: "Высокое время ответа API"
+          description: "95 перцентиль времени ответа превышает 2 секунды"
+
+      - alert: ModelPredictionError
+        expr: rate(model_predictions_total{status="error"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: mlops
+        annotations:
+          summary: "Высокий уровень ошибок предсказаний"
+          description: "Более 10% предсказаний модели завершаются ошибкой"
+
+      - alert: LowModelConfidence
+        expr: avg_over_time(model_confidence[10m]) < 0.6
+        for: 5m
+        labels:
+          severity: warning
+          team: mlops
+        annotations:
+          summary: "Низкая уверенность модели"
+          description: "Средняя уверенность модели ниже 60%"
+
+      - alert: HighCPULoad
+        expr: node_load1 > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Высокая загрузка CPU"
+          description: "Средняя загрузка CPU за 1 минуту превышает 200%"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Высокое использование памяти"
+          description: "Использование памяти превышает 85%"

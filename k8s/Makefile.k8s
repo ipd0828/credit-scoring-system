@@ -1,0 +1,29 @@
+# Kubernetes Commands
+K8S_NS = credit-scoring
+
+k8s-deploy:
+	powershell -ExecutionPolicy Bypass -File scripts/deploy-k8s.ps1
+
+k8s-status:
+	@echo "📦 Pods:"
+	kubectl get pods -n $(K8S_NS)
+	@echo ""
+	@echo "🔧 Services:"
+	kubectl get svc -n $(K8S_NS)
+
+k8s-logs-api:
+	kubectl logs -n $(K8S_NS) -l app=credit-scoring-api --tail=50 -f
+
+k8s-logs-frontend:
+	kubectl logs -n $(K8S_NS) -l app=credit-scoring-frontend --tail=50 -f
+
+k8s-port-forward:
+	@echo "🌐 Starting port forwarding..."
+	@echo "API: http://localhost:8000"
+	@echo "Frontend: http://localhost:8501"
+	kubectl port-forward -n $(K8S_NS) service/credit-scoring-api 8000:8000 &
+	kubectl port-forward -n $(K8S_NS) service/credit-scoring-frontend 8501:8501 &
+
+k8s-clean:
+	kubectl delete -f k8s/ --ignore-not-found
+	kubectl delete namespace $(K8S_NS) --ignore-not-found

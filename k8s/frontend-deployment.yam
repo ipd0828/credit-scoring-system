@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-scoring-frontend
+  namespace: credit-scoring
+  labels:
+    app: credit-scoring-frontend
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-scoring-frontend
+  template:
+    metadata:
+      labels:
+        app: credit-scoring-frontend
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: credit-scoring-frontend:test  # Наш собранный образ
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8501
+        env:
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: credit-scoring-config
+              key: API_URL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: credit-scoring-frontend
+  namespace: credit-scoring
+spec:
+  selector:
+    app: credit-scoring-frontend
+  ports:
+  - port: 8501
+    targetPort: 8501
+  type: ClusterIP

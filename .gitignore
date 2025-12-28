@@ -107,3 +107,26 @@ DATA_OUT/
 # Great Expectations uncommitted
 gx/uncommitted/
 EOF
+# Terraform cloud
+yandex-key.json
+# Terraform
+deployment/terraform/.terraform/
+deployment/terraform/*.tfstate
+deployment/terraform/*.tfstate.*
+deployment/terraform/.terraform.lock.hcl
+deployment/terraform/terraform.tfvars
+deployment/terraform/yandex-key.json
+deployment/terraform/*.backup
+
+# Kubernetes
+deployment/kubernetes/*.kubeconfig
+deployment/kubernetes/secrets/
+deployment/kubernetes/*.env
+
+# Локальные файлы
+*.log
+.env
+.env.local
+.vscode/
+.idea/
+.DS_Store

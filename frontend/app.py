@@ -13,7 +13,7 @@ import streamlit as st
 # Конфигурация страницы
 st.set_page_config(
     page_title="Система Кредитного Скоринга",
-    page_icon="🏦",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -292,7 +292,7 @@ def main():
 
         # Prediction button
         if st.button(
-            "🔮 Предсказать Кредитный Скоринг", type="primary", use_container_width=True
+            " Предсказать Кредитный Скоринг", type="primary", use_container_width=True
         ):
             # Prepare request data
             request_data = {
@@ -322,7 +322,7 @@ def main():
                 if prediction["prediction"] == 0:
                     st.markdown(
                         f'<div class="prediction-result approved">'
-                        f"<h2>✅ Кредит Одобрен!</h2>"
+                        f"<h2> Кредит Одобрен!</h2>"
                         f'<p><strong>Уверенность:</strong> {prediction["confidence"].title()}</p>'
                         f'<p><strong>Оценка риска:</strong> {prediction["risk_score"]:.1f}/100</p>'
                         f'<p><strong>Рекомендуемая сумма:</strong> ${prediction.get("recommended_amount", loan_amnt):,.2f}</p>'
@@ -332,7 +332,7 @@ def main():
                 else:
                     st.markdown(
                         f'<div class="prediction-result rejected">'
-                        f"<h2>❌ Кредит Отклонен</h2>"
+                        f"<h2> Кредит Отклонен</h2>"
                         f'<p><strong>Уверенность:</strong> {prediction["confidence"].title()}</p>'
                         f'<p><strong>Оценка риска:</strong> {prediction["risk_score"]:.1f}/100</p>'
                         f"<p><strong>Причина:</strong> Обнаружен высокий риск</p>"
@@ -372,14 +372,14 @@ def main():
 
             else:
                 st.error(
-                    f"❌ Ошибка предсказания: {result.get('error', 'Неизвестная ошибка')}"
+                    f" Ошибка предсказания: {result.get('error', 'Неизвестная ошибка')}"
                 )
 
     with tab2:
         st.header("Панель Аналитики")
 
         # Placeholder for analytics
-        st.info("📊 Панель аналитики будет реализована здесь")
+        st.info(" Панель аналитики будет реализована здесь")
 
         # Sample charts
         col1, col2 = st.columns(2)

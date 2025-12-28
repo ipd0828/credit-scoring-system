@@ -524,13 +524,13 @@ def main():
         monitor.send_alerts(report)
 
         # Выводим краткую сводку
-        print(f"\n📊 ОТЧЕТ МОНИТОРИНГА МОДЕЛИ")
+        print(f"\n ОТЧЕТ МОНИТОРИНГА МОДЕЛИ")
         print(f"Время: {report['timestamp']}")
         print(f"Статус: {report['overall_status']}")
         print(f"Алертов: {len(report.get('alerts', []))}")
 
         if report.get("alerts"):
-            print("\n🚨 АЛЕРТЫ:")
+            print("\n АЛЕРТЫ:")
             for alert in report["alerts"]:
                 print(f"  [{alert['severity'].upper()}] {alert['message']}")
 

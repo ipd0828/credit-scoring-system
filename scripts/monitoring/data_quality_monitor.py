@@ -533,19 +533,19 @@ def main():
         monitor.save_quality_report(report, output_path)
 
         # Выводим краткую сводку
-        print(f"\n📊 ОТЧЕТ О КАЧЕСТВЕ ДАННЫХ")
+        print(f"\n ОТЧЕТ О КАЧЕСТВЕ ДАННЫХ")
         print(f"Время: {report['timestamp']}")
         print(f"Размер данных: {report['data_shape']}")
         print(f"Скор качества: {report['overall_quality_score']:.1f}/100")
         print(f"Проблем: {len(report.get('issues', []))}")
 
         if report.get("issues"):
-            print("\n⚠️  ПРОБЛЕМЫ:")
+            print("\n  ПРОБЛЕМЫ:")
             for issue in report["issues"]:
                 print(f"  • {issue}")
 
         if report.get("recommendations"):
-            print("\n💡 РЕКОМЕНДАЦИИ:")
+            print("\n РЕКОМЕНДАЦИИ:")
             for rec in report["recommendations"]:
                 print(f"  • {rec}")
 

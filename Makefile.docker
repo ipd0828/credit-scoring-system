@@ -1,0 +1,66 @@
+# Makefile.docker
+.PHONY: docker-build docker-build-api docker-build-frontend docker-build-ml docker-up docker-down docker-logs docker-clean
+
+# Docker commands
+DOCKER_COMPOSE_PROD = docker-compose -f docker-compose.prod.yml
+DOCKER_COMPOSE_DEV = docker-compose -f docker-compose.yml
+
+# Build all images
+docker-build: docker-build-api docker-build-frontend docker-build-ml
+	@echo "✅ Все образы собраны"
+
+# Build API image
+docker-build-api:
+	@echo "🔨 Сборка образа API..."
+	docker build -t credit-scoring-api:latest -f Dockerfile.api .
+
+# Build Frontend image
+docker-build-frontend:
+	@echo "🔨 Сборка образа Frontend..."
+	docker build -t credit-scoring-frontend:latest -f Dockerfile.frontend .
+
+# Build ML pipeline image
+docker-build-ml:
+	@echo "🔨 Сборка образа ML пайплайна..."
+	docker build -t credit-scoring-ml:latest -f Dockerfile.ml .
+
+# Start production stack
+docker-up:
+	@echo "🚀 Запуск продакшн стека..."
+	$(DOCKER_COMPOSE_PROD) up -d
+
+# Stop production stack
+docker-down:
+	@echo "🛑 Остановка продакшн стека..."
+	$(DOCKER_COMPOSE_PROD) down
+
+# View logs
+docker-logs:
+	@echo "📋 Просмотр логов..."
+	$(DOCKER_COMPOSE_PROD) logs -f
+
+# Clean Docker system
+docker-clean:
+	@echo "🧹 Очистка Docker системы..."
+	docker system prune -f
+	docker image prune -f
+
+# Push images to registry
+docker-push:
+	@echo "📤 Отправка образов в registry..."
+	docker tag credit-scoring-api:latest ${REGISTRY}/credit-scoring-api:latest
+	docker tag credit-scoring-frontend:latest ${REGISTRY}/credit-scoring-frontend:latest
+	docker push ${REGISTRY}/credit-scoring-api:latest
+	docker push ${REGISTRY}/credit-scoring-frontend:latest
+
+# Scan images for vulnerabilities
+docker-scan:
+	@echo "🔍 Сканирование образов на уязвимости..."
+	docker scan credit-scoring-api:latest
+	docker scan credit-scoring-frontend:latest
+	docker scan credit-scoring-ml:latest
+
+# Size of images
+docker-size:
+	@echo "📊 Размеры образов:"
+	@docker images credit-scoring-* --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"

@@ -11,7 +11,7 @@ import streamlit as st
 # Конфигурация страницы
 st.set_page_config(
     page_title="Система Кредитного Скоринга",
-    page_icon="🏦",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -54,56 +54,66 @@ def main():
 
     # Заголовок
     st.markdown(
-        '<h1 class="main-header">🏦 Система Кредитного Скоринга</h1>',
+        '<h1 class="main-header"> Система Кредитного Скоринга</h1>',
         unsafe_allow_html=True,
     )
 
     # Проверка состояния API
     if not check_api_health():
-        st.error("❌ API недоступен. Убедитесь, что backend сервис запущен.")
+        st.error(" API недоступен. Убедитесь, что backend сервис запущен.")
         st.stop()
 
     # Получение информации о модели
     model_info, status = get_model_info()
     if status != 200:
-        st.error("❌ Не удалось получить информацию о модели")
+        st.error(" Не удалось получить информацию о модели")
         st.stop()
 
     # Боковая панель
     with st.sidebar:
-        st.header("📊 Статус Системы")
+        st.header(" Статус Системы")
 
         # Проверка состояния API
         if check_api_health():
-            st.success("✅ API Онлайн")
+            st.success(" API Онлайн")
         else:
-            st.error("❌ API Офлайн")
+            st.error(" API Офлайн")
 
         # Информация о модели
         if model_info.get("model_loaded"):
             st.info(f"🤖 Модель: {model_info.get('model_type', 'ML Модель')}")
-            st.info(f"📊 Признаков: {model_info.get('features_count', 6)}")
-            st.info(f"🔄 Версия: {model_info.get('model_version', '1.0.0')}")
+            st.info(f" Признаков: {model_info.get('features_count', 6)}")
+            st.info(f" Версия: {model_info.get('model_version', '1.0.0')}")
 
             # Отображаем метрики если они есть
             if "accuracy" in model_info:
-                st.info(f"🎯 Точность: {model_info.get('accuracy', 0.0):.1%}")
+                st.info(f" Точность: {model_info.get('accuracy', 0.0):.1%}")
             if "roc_auc" in model_info:
-                st.info(f"📈 ROC-AUC: {model_info.get('roc_auc', 0.0):.3f}")
+                st.info(f" ROC-AUC: {model_info.get('roc_auc', 0.0):.3f}")
         else:
-            st.warning("⚠️ Модель не загружена")
+            st.warning(" Модель не загружена")
+
+        st.divider()
+        st.subheader("⚙️ Настройки")
+        st.info(f"Текущий порог: {threshold if 'threshold' in locals() else 0.6}")
+        st.caption("""
+            **Пояснение порога:**
+            • < 0.4: Лояльный режим (допускает вероятность дефолта до 60-90%)
+            • 0.4-0.6: Баланс (допускает вероятность дефолта до 40-60%)
+            • > 0.6: Строгий режим (допускает вероятность дефолта до 10-40%)
+            """)
 
     # Основной контент
-    tab1, tab2, tab3 = st.tabs(["🎯 Предсказание", "📊 Аналитика", "🤖 Информация"])
+    tab1, tab2, tab3 = st.tabs([" Предсказание", " Аналитика", "🤖 Информация"])
 
     with tab1:
-        st.header("🎯 Предсказание Кредитного Скоринга")
+        st.header(" Предсказание Кредитного Скоринга")
 
         st.info(
             """
         **Используемые признаки (6):**
-        - 💰 Кредитный лимит | 👫 Пол | 💍 Семейное положение  
-        - 🎂 Возраст | 💳 Статус платежей | 🎓 Образование
+        -  Кредитный лимит |  Пол |  Семейное положение  
+        -  Возраст |  Статус платежей |  Образование
         """
         )
 
@@ -111,10 +121,10 @@ def main():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("👤 Основная Информация")
+            st.subheader(" Основная Информация")
 
             limit_bal = st.number_input(
-                "💰 Кредитный лимит (TWD)",
+                " Кредитный лимит (TWD)",
                 min_value=10000.0,
                 max_value=1000000.0,
                 value=150000.0,
@@ -123,11 +133,11 @@ def main():
             )
 
             sex = st.selectbox(
-                "👫 Пол", ["Мужской", "Женский"], index=0, help="Пол заявителя"
+                " Пол", ["Мужской", "Женский"], index=0, help="Пол заявителя"
             )
 
             age = st.number_input(
-                "🎂 Возраст",
+                " Возраст",
                 min_value=21,
                 max_value=79,
                 value=35,
@@ -136,32 +146,32 @@ def main():
             )
 
         with col2:
-            st.subheader("🏠 Демографическая Информация")
+            st.subheader(" Демографическая Информация")
 
             marriage = st.selectbox(
-                "💍 Семейное положение",
+                " Семейное положение",
                 ["Неизвестно", "Женат/Замужем", "Не женат/Не замужем", "Другое"],
                 index=1,
                 help="Текущее семейное положение",
             )
 
             education = st.selectbox(
-                "🎓 Уровень образования",
+                " Уровень образования",
                 ["Аспирантура", "Университет", "Средняя школа", "Другое"],
                 index=1,
                 help="Наивысший уровень образования",
             )
 
         # Статус платежа
-        st.subheader("💳 Статус Погашения")
+        st.subheader(" Статус Погашения")
 
         pay_new = st.selectbox(
             "Статус погашения текущего месяца",
             options=[-1, 0, 1],
             format_func=lambda x: {
-                -1: "✅ Погашено в срок",
-                0: "⚠️ Не было платежей",
-                1: "❌ Задержка платежа",
+                -1: " Погашено в срок",
+                0: " Не было платежей",
+                1: " Задержка платежа",
             }[x],
             index=0,
             help="Статус погашения кредита за текущий месяц",
@@ -182,16 +192,48 @@ def main():
             "Другое": 4,
         }
 
-        # Prediction button
+        # ========== ПОЛЗУНОК СТРОГОСТИ МОДЕЛИ ==========
+        st.subheader("⚙️ Настройка строгости модели")
+
+        col_th1, col_th2, col_th3 = st.columns([2, 3, 2])
+
+        with col_th2:
+            threshold = st.slider(
+                "Порог классификации",
+                min_value=0.1,
+                max_value=0.9,
+                value=0.6,
+                step=0.05,
+                help="""
+                Уровень строгости модели:
+                • 🔴 0.1-0.3: Очень лояльная (одобряет почти всем)
+                • 🟡 0.4-0.6: Умеренная (баланс риска и одобрений)
+                • 🟢 0.7-0.9: Строгая (одобряет только надежным)
+
+                По умолчанию: 0.6 (вероятность дефолта > 60% → отказ)
+                """
+            )
+
+            # Визуальная индикация
+            if threshold <= 0.3:
+                st.info("🔴 Режим: Очень лояльный")
+            elif threshold <= 0.6:
+                st.info("🟡 Режим: Умеренный (рекомендуется)")
+            else:
+                st.info("🟢 Режим: Строгий")
+
+        # ========== КНОПКА ПРЕДСКАЗАНИЯ ==========
         if st.button(
-            "🔮 Получить Кредитный Скоринг", type="primary", use_container_width=True
+                " Получить Кредитный Скоринг",
+                type="primary",
+                use_container_width=True
         ):
             # Валидация данных
             errors = []
             if limit_bal < 10000 or limit_bal > 1000000:
-                errors.append("❌ Кредитный лимит должен быть между 10,000 и 1,000,000")
+                errors.append(" Кредитный лимит должен быть между 10,000 и 1,000,000")
             if age < 21 or age > 79:
-                errors.append("❌ Возраст должен быть между 21 и 79 годами")
+                errors.append(" Возраст должен быть между 21 и 79 годами")
 
             if errors:
                 for error in errors:
@@ -206,10 +248,11 @@ def main():
                 "age": int(age),
                 "pay_new": int(pay_new),
                 "education_new": education_mapping[education],
+                "threshold": float(threshold)  # ← ДОБАВЛЯЕМ ПОРОГ
             }
 
             # Отображение отправляемых данных
-            with st.expander("📤 Отправляемые данные", expanded=False):
+            with st.expander(" Отправляемые данные", expanded=False):
                 st.json(request_data)
 
             # Make prediction
@@ -220,43 +263,40 @@ def main():
                 prediction = result["prediction"]
                 processing_time = result["processing_time_ms"]
 
-                # Форматирование времени
-                time_display = (
-                    f"{processing_time:.0f}мс"
-                    if processing_time < 1000
-                    else f"{processing_time / 1000:.2f}с"
-                )
+                # Добавляем информацию о пороге
+                threshold_used = request_data.get("threshold", 0.6)
 
-                # Display prediction result
                 if prediction["prediction"] == 0:
-                    st.success("### ✅ Кредит Одобрен!")
+                    st.success("###  Кредит Одобрен!")
                     st.info(
                         f"""
-                    **Детали решения:**
-                    - 🤖 Модель: {prediction["model_version"]}
-                    - 🎯 Уверенность: {prediction["confidence"].title()}
-                    - 📊 Оценка риска: {prediction["risk_score"]:.1f}/100
-                    - 📈 Вероятность возврата: {prediction["probability"]:.1%}
-                    - ⏱️ Время анализа: {time_display}
-                    """
+                        **Детали решения:**
+                        - 🤖 Модель: {prediction["model_version"]}
+                        - ⚙️ Порог строгости: {threshold_used}
+                        -  Уверенность: {prediction["confidence"].title()}
+                        -  Оценка риска: {prediction["risk_score"]:.1f}/100
+                        -  Вероятность возврата: {prediction["probability"]:.1%}
+                        - ⏱ Время анализа: {processing_time:.0f}мс
+                        """
                     )
                 else:
-                    st.error("### ❌ Высокий риск дефолта")
+                    st.error("###  Высокий риск дефолта")
                     st.warning(
                         f"""
-                    **Детали решения:**
-                    - 🤖 Модель: {prediction["model_version"]}
-                    - 🎯 Уверенность: {prediction["confidence"].title()}
-                    - 📊 Оценка риска: {prediction["risk_score"]:.1f}/100
-                    - 📉 Вероятность дефолта: {prediction["probability"]:.1%}
-                    - ⏱️ Время анализа: {time_display}
-                    - 💡 Рекомендация: Требуется дополнительная проверка
-                    """
+                        **Детали решения:**
+                        - 🤖 Модель: {prediction["model_version"]}
+                        - ⚙️ Порог строгости: {threshold_used}
+                        -  Уверенность: {prediction["confidence"].title()}
+                        -  Оценка риска: {prediction["risk_score"]:.1f}/100
+                        -  Вероятность дефолта: {prediction["probability"]:.1%}
+                        - ⏱ Время анализа: {processing_time:.0f}мс
+                        -  Рекомендация: Требуется дополнительная проверка
+                        """
                     )
 
                 # Feature importance chart
                 if prediction.get("features_importance"):
-                    st.subheader("📊 Влияние Признаков на Решение")
+                    st.subheader(" Влияние Признаков на Решение")
                     importance_df = pd.DataFrame(
                         list(prediction["features_importance"].items()),
                         columns=["Признак", "Влияние"],
@@ -295,38 +335,38 @@ def main():
 
             else:
                 error_msg = result.get("error", "Неизвестная ошибка")
-                st.error(f"❌ Ошибка анализа: {error_msg}")
+                st.error(f" Ошибка анализа: {error_msg}")
                 if "Проверьте консоль бэкенда" not in error_msg:
                     st.info(
                         "Проверьте консоль бэкенда для подробной информации об ошибке"
                     )
 
     with tab2:
-        st.header("📊 Аналитика")
+        st.header(" Аналитика")
 
         if model_info.get("model_loaded"):
-            st.success("✅ Модель успешно загружена и готова к работе")
+            st.success(" Модель успешно загружена и готова к работе")
 
             # Метрики модели
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("🤖 Тип модели", model_info.get("model_type", "ML Модель"))
             with col2:
-                st.metric("📊 Признаков", model_info.get("features_count", 6))
+                st.metric(" Признаков", model_info.get("features_count", 6))
             with col3:
-                st.metric("🔄 Версия", model_info.get("model_version", "1.0.0"))
+                st.metric(" Версия", model_info.get("model_version", "1.0.0"))
             with col4:
                 model_status = (
                     "Загружена" if model_info.get("model_loaded") else "Не загружена"
                 )
-                st.metric("📈 Статус", model_status)
+                st.metric(" Статус", model_status)
 
             # Дополнительные метрики если есть
             if any(
                 key in model_info
                 for key in ["accuracy", "roc_auc", "precision", "recall"]
             ):
-                st.subheader("📈 Метрики Производительности")
+                st.subheader(" Метрики Производительности")
                 metrics_cols = st.columns(4)
                 metric_index = 0
 
@@ -349,10 +389,10 @@ def main():
                     with metrics_cols[metric_index % 4]:
                         st.metric("Recall", f"{model_info['recall']:.3f}")
         else:
-            st.error("❌ Модель не загружена в системе")
+            st.error(" Модель не загружена в системе")
 
         # Статистика по признакам
-        st.subheader("📋 Используемые Признаки")
+        st.subheader(" Используемые Признаки")
         features_info = {
             "Признак": [
                 "Кредитный лимит",
@@ -388,7 +428,7 @@ def main():
         st.header("🤖 Информация о Модели")
 
         if model_info.get("model_loaded"):
-            st.subheader("🚀 Основные Характеристики")
+            st.subheader(" Основные Характеристики")
 
             col1, col2 = st.columns(2)
 
@@ -405,9 +445,9 @@ def main():
             with col2:
                 st.write("**Статус модели:**")
                 status_color = (
-                    "✅ Загружена"
+                    " Загружена"
                     if model_info.get("model_loaded")
-                    else "❌ Не загружена"
+                    else " Не загружена"
                 )
                 st.info(f"```{status_color}```")
 
@@ -418,7 +458,7 @@ def main():
                 st.info(f"```{last_updated.split('T')[0]}```")
 
             # Детальная информация о признаках
-            st.subheader("🎯 Используемые Признаки")
+            st.subheader(" Используемые Признаки")
             if "features" in model_info:
                 for i, feature in enumerate(model_info["features"], 1):
                     st.write(f"{i}. {feature}")
@@ -429,7 +469,7 @@ def main():
             if any(
                 key in model_info for key in ["description", "threshold", "model_class"]
             ):
-                st.subheader("📝 Дополнительная Информация")
+                st.subheader(" Дополнительная Информация")
 
                 if "description" in model_info:
                     st.write("**Описание:**")
@@ -444,7 +484,7 @@ def main():
                     st.info(f"```{model_info['model_class']}```")
 
         else:
-            st.error("### ❌ Модель не загружена")
+            st.error("###  Модель не загружена")
             st.warning(
                 """
             **Возможные причины:**

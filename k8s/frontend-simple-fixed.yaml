@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-scoring-frontend-simple
+  namespace: credit-scoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-scoring-frontend-simple
+  template:
+    metadata:
+      labels:
+        app: credit-scoring-frontend-simple
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        # Простая HTML страница
+        volumeMounts:
+        - name: html-content
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: html-content
+        configMap:
+          name: frontend-html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-html
+  namespace: credit-scoring
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Credit Scoring System</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+            .success { background: #d4edda; color: #155724; }
+            .warning { background: #fff3cd; color: #856404; }
+            .endpoints { margin-top: 20px; }
+            .endpoint { margin: 10px 0; padding: 10px; background: #f8f9fa; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Credit Scoring System</h1>
+            <div class="status success">
+                ✅ System successfully deployed to Kubernetes
+            </div>
+            
+            <h2>🌐 Available Services</h2>
+            <div class="endpoints">
+                <div class="endpoint">
+                    <h3>📊 ML API Service</h3>
+                    <p><strong>URL:</strong> <a href="http://localhost:8001">http://localhost:8001</a></p>
+                    <p><strong>Health Check:</strong> <a href="http://localhost:8001/api/v1/health">/api/v1/health</a></p>
+                    <p><strong>API Documentation:</strong> <a href="http://localhost:8001/docs">/docs</a></p>
+                </div>
+                
+                <div class="endpoint">
+                    <h3>🎨 Streamlit Frontend</h3>
+                    <p><strong>Status:</strong> Running locally (not in Kubernetes)</p>
+                    <p><strong>URL:</strong> <a href="http://localhost:8501">http://localhost:8501</a></p>
+                </div>
+            </div>
+            
+            <h2>📋 System Architecture</h2>
+            <ul>
+                <li><strong>Backend:</strong> FastAPI with ONNX model (Kubernetes)</li>
+                <li><strong>Frontend:</strong> Streamlit application (Local)</li>
+                <li><strong>Model:</strong> LightGBM converted to ONNX</li>
+                <li><strong>Orchestration:</strong> Kubernetes (Minikube)</li>
+            </ul>
+        </div>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: credit-scoring-frontend-simple
+  namespace: credit-scoring
+spec:
+  selector:
+    app: credit-scoring-frontend-simple
+  ports:
+  - port: 8082       # Порт Service
+    targetPort: 80   # Порт контейнера (nginx слушает на 80)
+  type: ClusterIP

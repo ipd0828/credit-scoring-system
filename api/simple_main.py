@@ -22,6 +22,7 @@ class CreditScoringRequest(BaseModel):
     age: int
     pay_new: int
     education_new: int
+    threshold: Optional[float] = 0.6  # ← Добавляем опциональный параметрCredits
 
 
 class ModelPrediction(BaseModel):
@@ -66,69 +67,104 @@ app.add_middleware(
 # Глобальные переменные
 model = None
 scaler = None
+model_type = "unknown"
+model_name = "unknown"
 
 
 def load_model():
     """Умная загрузка лучшей модели."""
-    global model, scaler
+    global model, scaler, model_type, model_name
     try:
         current_dir = Path(__file__).parent
-        models_dir = current_dir / ".." / "models" / "trained_custom"
 
-        # 1. Сначала пробуем загрузить best_tuned_model.pkl
+        # Пробуем загрузить ONNX модель LightGBM в первую очередь
+        onnx_dir = current_dir / ".." / "models" / "onnx_final"
+        onnx_model_path = onnx_dir / "best_model.onnx"
+
+        if onnx_model_path.exists():
+            try:
+                import onnxruntime as ort
+                model = ort.InferenceSession(str(onnx_model_path))
+                model_type = "LightGBM (ONNX)"
+                model_name = "best_model.onnx"
+                print(f"ONNX модель загружена: {onnx_model_path.name}")
+                print("Используется LightGBM (лучшая модель по ROC-AUC)")
+                return
+            except ImportError:
+                print("ONNX Runtime не установлен, используем pickle модели")
+                model_type = "LightGBM"
+            except Exception as e:
+                print(f"Ошибка загрузки ONNX модели: {e}")
+
+        # Если ONNX не загрузилась, пробуем pickle модели
+        models_dir = current_dir / ".." / "models" / "trained_final"
+
+        # 1. Сначала пробуем загрузить best_tuned_model.pkl (LightGBM)
         model_path = models_dir / "best_tuned_model.pkl"
 
         if not model_path.exists():
-            # Если нет tuned модели, пробуем best_model.pkl
+            # Если нет tuned модели, пробуем lightgbm модель
+            model_path = models_dir / "lightgbm.pkl"
+
+        if not model_path.exists():
+            # Если нет LightGBM, ищем best_model.pkl
             model_path = models_dir / "best_model.pkl"
 
         if not model_path.exists():
-            # Если нет best_model, ищем любую модель CatBoost
-            model_files = list(models_dir.glob("*catboost*.pkl"))
+            # Если нет best_model, ищем любую модель
+            model_files = list(models_dir.glob("*.pkl"))
             if model_files:
-                model_path = model_files[0]
-            else:
-                # Ищем любую модель
-                model_files = list(models_dir.glob("*.pkl"))
-                model_files = [f for f in model_files if "scaler" not in f.name.lower()]
-                if model_files:
-                    model_path = model_files[0]
+                # Ищем LightGBM в первую очередь
+                lgbm_files = [f for f in model_files if 'lightgbm' in f.name.lower()]
+                if lgbm_files:
+                    model_path = lgbm_files[0]
+                    model_type = "LightGBM"
                 else:
-                    raise FileNotFoundError("Не найдены файлы моделей")
+                    model_path = model_files[0]
+                    model_type = "Unknown ML Model"
+                print(f"Будет загружена модель: {model_path.name}")
+            else:
+                raise FileNotFoundError("Не найдены файлы моделей")
 
         # 2. Загрузка модели
         print(f"Загрузка модели из: {model_path}")
         with open(model_path, "rb") as f:
             model = pickle.load(f)
 
-        # 3. ПРЕПРОЦЕССОР НЕ ИСПОЛЬЗУЕТСЯ - УБИРАЕМ ЕГО
+        # 3. Определяем тип модели
+        model_name = model_path.name
+        model_class_name = type(model).__name__.lower()
+
+        if 'lgbm' in model_class_name or 'lightgbm' in model_class_name:
+            model_type = "LightGBM"
+        elif 'random' in model_class_name or 'forest' in model_class_name:
+            model_type = "Random Forest"
+        elif 'logistic' in model_class_name:
+            model_type = "Logistic Regression"
+        else:
+            model_type = model_class_name
+
+        # 4. ПРЕПРОЦЕССОР НЕ ИСПОЛЬЗУЕТСЯ
         scaler = None
         print("Масштабирование ОТКЛЮЧЕНО")
 
-        print(f"Модель загружена: {type(model).__name__}")
-        print(f"Имя файла: {model_path.name}")
+        print(f"Модель загружена: {model_type}")
+        print(f"Имя файла: {model_name}")
+
+        if model_type == "LightGBM":
+            print("✓ Используется LightGBM (лучшая модель по ROC-AUC: 0.7285)")
 
     except Exception as e:
         print(f"Ошибка загрузки модели: {e}")
         model = None
         scaler = None
+        model_type = "not loaded"
+        model_name = "none"
 
 
 def prepare_features_for_prediction(features, model_type):
     """Подготовка признаков для предсказания в зависимости от типа модели."""
-    if "catboost" in model_type.lower():
-        # Для CatBoost преобразуем категориальные признаки в правильный формат
-        features_cat = features.astype(object)
-        categorical_indices = [1, 2, 4, 5]  # sex, marriage_new, pay_new, education_new
-
-        for idx in categorical_indices:
-            # Преобразуем в целые числа, затем в строки
-            features_cat[:, idx] = str(int(features_cat[:, idx][0]))
-
-        return features_cat
-    else:
-        # Для других моделей используем как есть
-        return features
+    return features
 
 
 @app.on_event("startup")
@@ -139,11 +175,12 @@ async def startup_event():
 @app.get("/api/v1/health", response_model=HealthCheckResponse)
 async def health_check():
     model_status = "loaded" if model is not None else "not_loaded"
+
     return HealthCheckResponse(
         status="healthy",
         timestamp=datetime.now(timezone.utc).isoformat(),
         version="1.0.0",
-        model_status=model_status,
+        model_status=f"{model_status} ({model_type})",
     )
 
 
@@ -151,6 +188,12 @@ async def health_check():
 async def predict_credit_score(request: CreditScoringRequest):
     start_time = time.time()
     request_id = str(uuid.uuid4())
+
+    # Используем threshold из запроса или стандартный 0.6
+    threshold = request.threshold if hasattr(request, 'threshold') else 0.6
+    threshold = max(0.1, min(0.9, threshold))  # Ограничиваем от 0.1 до 0.9
+
+    print(f"  Используемый порог классификации: {threshold}")
 
     try:
         # Валидация входных данных
@@ -186,25 +229,59 @@ async def predict_credit_score(request: CreditScoringRequest):
             ]
         )
 
-        # Определяем тип модели
-        model_type = type(model).__name__
+        print(f" Тип модели: {model_type}")
+        print(f" Признаки: {features}")
+        print(" Масштабирование ОТКЛЮЧЕНО")
 
-        # УБИРАЕМ МАСШТАБИРОВАНИЕ - ИСПОЛЬЗУЕМ ИСХОДНЫЕ ПРИЗНАКИ
-        print(f"🔧 Признаки: {features}")
-        print("📊 Масштабирование ОТКЛЮЧЕНО")
-
-        # Подготавливаем признаки в зависимости от типа модели
+        # Подготавливаем признаки
         features_prepared = prepare_features_for_prediction(features, model_type)
 
-        # Выполняем предсказание
         try:
-            prediction_proba = model.predict_proba(features_prepared)[0]
-            prediction_class = model.predict(features_prepared)[0]
+            if hasattr(model, 'run'):  # ONNX модель
+                input_name = model.get_inputs()[0].name
+                features_float32 = features.astype(np.float32)
+
+                outputs = model.run(None, {input_name: features_float32})
+
+                # Получаем вероятности
+                prob_dict = outputs[1][0] if len(outputs) > 1 and outputs[1] else {0: 0.5, 1: 0.5}
+                prob_class0 = float(prob_dict.get(0, 0))  # Вероятность одобрения
+                prob_class1 = float(prob_dict.get(1, 0))  # Вероятность дефолта
+
+                print(f"    Вероятности: одобрение={prob_class0:.3f}, дефолт={prob_class1:.3f}")
+                print(f"    Порог классификации: {threshold}")
+                print(f"    Макс. допустимый дефолт: {1 - threshold:.3f}")
+
+                # ИСПРАВЛЕНИЕ: Сравниваем вероятность дефолта с (1 - порог)
+                if prob_class1 > (1 - threshold):  # ← ИЗМЕНЕНИЕ ЗДЕСЬ
+                    prediction_class = 1  # Дефолт
+                    probability = prob_class1  # Вероятность дефолта
+                    print(
+                        f"    Решение: ДЕФОЛТ (вероятность дефолта {prob_class1:.3f} > допустимого {1 - threshold:.3f})")
+                else:
+                    prediction_class = 0  # Одобрено
+                    probability = prob_class0  # Вероятность одобрения
+                    print(
+                        f"    Решение: ОДОБРЕНО (вероятность дефолта {prob_class1:.3f} ≤ допустимого {1 - threshold:.3f})")
+
+            else:  # Pickle модель
+                prediction_proba = model.predict_proba(features_prepared)[0]
+                prob_class0 = float(prediction_proba[0])  # Вероятность одобрения
+                prob_class1 = float(prediction_proba[1])  # Вероятность дефолта
+
+                # ИСПРАВЛЕНИЕ: Та же логика для pickle моделей
+                if prob_class1 > (1 - threshold):  # ← ИЗМЕНЕНИЕ ЗДЕСЬ
+                    prediction_class = 1
+                    probability = prob_class1
+                else:
+                    prediction_class = 0
+                    probability = prob_class0
+
         except Exception as e:
+            print(f"  ОШИБКА: {str(e)}")
             raise HTTPException(500, f"Ошибка при выполнении предсказания: {str(e)}")
 
-        probability = float(prediction_proba[0])
-        risk_score = (1 - probability) * 100
+        risk_score = probability * 100 if prediction_class == 0 else (1 - probability) * 100
 
         # Определяем уверенность предсказания
         if probability >= 0.8:
@@ -214,15 +291,23 @@ async def predict_credit_score(request: CreditScoringRequest):
         else:
             confidence = "низкая"
 
+        # Определяем версию модели
+        if 'lightgbm' in model_type.lower():
+            model_version = "2.0.0-lightgbm"
+        elif 'random' in model_type.lower():
+            model_version = "2.0.0-rf"
+        elif 'logistic' in model_type.lower():
+            model_version = "2.0.0-lr"
+        else:
+            model_version = "2.0.0-ml"
+
         # Создаем результат предсказания
         prediction_result = ModelPrediction(
             prediction=int(prediction_class),
             probability=probability,
             confidence=confidence,
             risk_score=risk_score,
-            model_version=(
-                "2.0.0-catboost" if "catboost" in model_type.lower() else "2.0.0-ml"
-            ),
+            model_version=model_version,
             features_importance={
                 "limit_bal": 0.25,
                 "age": 0.20,
@@ -236,7 +321,8 @@ async def predict_credit_score(request: CreditScoringRequest):
         # Рассчитываем время выполнения
         processing_time = (time.time() - start_time) * 1000
 
-        print(f"✅ ПРЕДСКАЗАНИЕ УСПЕШНО")
+        print(f" ПРЕДСКАЗАНИЕ УСПЕШНО")
+        print(f"   Модель: {model_type}")
         print(f"   Класс: {prediction_class}")
         print(f"   Вероятность: {probability:.3f}")
         print(f"   Время: {processing_time:.0f}мс")
@@ -259,26 +345,34 @@ async def predict_credit_score(request: CreditScoringRequest):
 async def get_model_info():
     """Получение информации о загруженной модели."""
     if model is not None:
-        model_type = type(model).__name__
-
         # Правильное определение типа модели и версии
-        if "catboost" in model_type.lower():
-            model_version = "2.0.0-catboost"
-            model_class = "CatBoostClassifier"
-        elif "random" in model_type.lower():
+        if 'lightgbm' in model_type.lower():
+            model_version = "2.0.0-lightgbm"
+            model_class = "LightGBMClassifier"
+            is_best_model = True
+            recommendation = "LightGBM (лучшая модель по ROC-AUC: 0.7285)"
+        elif 'random' in model_type.lower():
             model_version = "2.0.0-rf"
             model_class = "RandomForestClassifier"
-        elif "logistic" in model_type.lower():
+            is_best_model = False
+            recommendation = f"Используется {model_class}, но LightGBM рекомендуется"
+        elif 'logistic' in model_type.lower():
             model_version = "2.0.0-lr"
             model_class = "LogisticRegression"
+            is_best_model = False
+            recommendation = f"Используется {model_class}, но LightGBM рекомендуется"
         else:
             model_version = "2.0.0-ml"
             model_class = model_type
+            is_best_model = False
+            recommendation = f"Используется {model_class}, но LightGBM рекомендуется"
 
         return {
             "model_version": model_version,
             "model_type": model_type,
             "model_class": model_class,
+            "model_name": model_name,
+            "is_best_model": is_best_model,
             "features_count": 6,
             "features": [
                 "limit_bal - Кредитный лимит (10000-1000000)",
@@ -291,20 +385,24 @@ async def get_model_info():
             "test_prediction": 1,
             "test_probability": [0.22, 0.78],
             "model_loaded": True,
-            "scaler_loaded": False,  # Устанавливаем в False
+            "scaler_loaded": False,
+            "recommendation": recommendation,
             "last_updated": datetime.now(timezone.utc).isoformat(),
-            "using_catboost": "catboost" in model_type.lower(),
+            "using_lightgbm": is_best_model,
         }
     else:
         return {
             "model_version": "not_loaded",
             "model_type": "none",
             "model_class": "none",
+            "model_name": "none",
+            "is_best_model": False,
             "features_count": 0,
             "model_loaded": False,
             "scaler_loaded": False,
+            "recommendation": "Рекомендуется LightGBM (лучшая модель: ROC-AUC 0.7285)",
             "last_updated": datetime.now(timezone.utc).isoformat(),
-            "using_catboost": False,
+            "using_lightgbm": False,
         }
 
 

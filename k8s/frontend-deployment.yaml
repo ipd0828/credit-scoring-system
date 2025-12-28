@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: credit-scoring-frontend
+  namespace: credit-scoring
+  labels:
+    app: credit-scoring-frontend
+    component: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: credit-scoring-frontend
+  template:
+    metadata:
+      labels:
+        app: credit-scoring-frontend
+        component: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: credit-scoring-frontend:test
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8501
+        env:
+        - name: API_BASE_URL
+          value: "http://credit-scoring-api.credit-scoring.svc.cluster.local:8000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl -f http://localhost:8501/_stcore/health || exit 1
+          initialDelaySeconds: 30
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: credit-scoring-frontend
+  namespace: credit-scoring
+spec:
+  selector:
+    app: credit-scoring-frontend
+  ports:
+  - port: 8501
+    targetPort: 8501
+  type: ClusterIP

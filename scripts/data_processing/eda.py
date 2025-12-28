@@ -228,8 +228,14 @@ def find_target_column(df: pd.DataFrame) -> str:
     # Нормализуем названия всех столбцов
     norm = {c: re.sub(r"[^a-z0-9]+", "", c.lower()) for c in df.columns}
 
+    print("Нормализованные названия колонок:")
+    for orig, norm_name in list(norm.items())[:20]:  # покажем первые 20
+        print(f"  {orig} -> {norm_name}")
+
     # Список ожидаемых имён целевой переменной
     preferred = [
+        "defaultpaymentnextmonth",  # UCI Credit Card
+        "default.payment.next.month",  # оригинальное название
         "loancondition",
         "loan_status",
         "loanstatus",
@@ -246,21 +252,23 @@ def find_target_column(df: pd.DataFrame) -> str:
     for want in preferred:
         for c, cn in norm.items():
             if cn == want:
+                print(f"Найдена целевая переменная по совпадению: '{c}' -> '{cn}'")
                 return c
 
-    # 2) Ищем по ключевым словам
+    # 2) Ищем колонки содержащие 'default'
     for c, cn in norm.items():
-        if any(
-            k in cn
-            for k in ["default", "charg", "loanstatus", "badloan", "loancondition"]
-        ):
+        if "default" in cn:
+            print(f"Найдена целевая переменная по ключевому слову: '{c}' -> '{cn}'")
             return c
 
     # 3) Ищем первый бинарный столбец
     for c in df.columns:
-        if df[c].dropna().nunique() == 2:
+        unique_vals = df[c].dropna().unique()
+        if len(unique_vals) == 2:
+            print(f"Найдена бинарная колонка: '{c}' с значениями {unique_vals}")
             return c
 
+    print("Не удалось найти целевую переменную!")
     return None
 
 
@@ -269,105 +277,89 @@ def analyze_target_variable(df: pd.DataFrame, target_col: str) -> Dict[str, Any]
     print(f"\nАнализ целевой переменной: {target_col}")
     print("-" * 40)
 
-    # Сначала покажем все уникальные значения статусов для отладки
+    # Показываем все уникальные значения для отладки
     unique_statuses = df[target_col].value_counts()
-    print("Уникальные значения целевой переменной:")
-    for status, count in unique_statuses.items():
+    print("Все уникальные значения целевой переменной:")
+    for status, count in unique_statuses.head(20).items():
         print(f"  '{status}' ({type(status).__name__}): {count} записей")
 
-    # Удаляем пропуски в целевой переменной
-    df_clean = df.dropna(subset=[target_col]).copy()
+    # Определяем более точные правила маппинга
+    def map_loan_status(status):
+        if pd.isna(status):
+            return 1  # По умолчанию считаем плохим
 
-    # Проверяем тип данных целевой переменной
-    dtype = df_clean[target_col].dtype
-    print(f"Тип данных целевой переменной: {dtype}")
+        status_str = str(status).strip().lower()
 
-    # Если целевая переменная уже числовая и бинарная, используем как есть
-    if dtype in ["int64", "float64", "int32", "float32"]:
-        unique_vals = df_clean[target_col].unique()
-        print(f"Уникальные числовые значения: {unique_vals}")
+        # Хорошие кредиты
+        good_indicators = [
+            "fully paid",
+            "current",
+            "good loan",
+            "no default",
+            "paid",
+            "completed",
+            "does not meet the credit policy. status:fully paid",
+            "0", "0.0"
+        ]
 
-        if set(unique_vals).issubset({0, 1}):
-            print("Целевая переменная уже бинарная (0 и 1), используем как есть")
-            df_clean["target"] = df_clean[target_col].astype(int)
-        else:
-            print(
-                "Целевая переменная числовая, но не бинарная. Создаем бинарную версию."
-            )
-            df_clean["target"] = (df_clean[target_col] > 0).astype(int)
-    else:
-        # Оригинальная логика для текстовых статусов
-        print("Целевая переменная текстовая, применяем маппинг статусов...")
+        # Плохие кредиты
+        bad_indicators = [
+            "charged off",
+            "default",
+            "late",
+            "bad loan",
+            "delinquent",
+            "chargedoff",
+            "defaulted",
+            "does not meet the credit policy. status:charged off",
+            "in grace period",
+            "late (16-30 days)",
+            "late (31-120 days)",
+            "1", "1.0"
+        ]
 
-        def map_loan_status(status):
-            if pd.isna(status):
-                return 1
-
-            status_str = str(status).strip().lower()
-
-            # Хорошие займы -> 0
-            good_indicators = [
-                "fully paid",
-                "current",
-                "good loan",
-                "no default",
-                "paid",
-                "completed",
-            ]
-
-            # Плохие займы -> 1
-            bad_indicators = [
-                "charged off",
-                "default",
-                "late",
-                "bad loan",
-                "delinquent",
-                "chargedoff",
-                "defaulted",
-            ]
-
-            # Проверяем хорошие займы
-            for indicator in good_indicators:
-                if indicator in status_str:
-                    return 0
-
-            # Проверяем плохие займы
-            for indicator in bad_indicators:
-                if indicator in status_str:
-                    return 1
-
-            # Для числовых значений в текстовом формате
-            if status_str in ["0", "0.0"]:
+        # Проверяем хорошие кредиты
+        for indicator in good_indicators:
+            if indicator in status_str:
                 return 0
-            elif status_str in ["1", "1.0"]:
-                return 1
-            else:
-                print(f"  Неизвестный статус: '{status}' -> помечен как плохой займ")
+
+        # Проверяем плохие кредиты
+        for indicator in bad_indicators:
+            if indicator in status_str:
                 return 1
 
-        df_clean["target"] = df_clean[target_col].apply(map_loan_status).astype(int)
+        # Для числовых значений
+        try:
+            num_val = float(status_str)
+            if num_val == 0:
+                return 0
+            elif num_val == 1:
+                return 1
+        except:
+            pass
+
+        # Если не нашли, логируем и считаем плохим
+        print(f"  Неизвестный статус: '{status}' -> помечен как плохой займ (1)")
+        return 1
+
+    df_clean = df.copy()
+    df_clean["target"] = df_clean[target_col].apply(map_loan_status).astype(int)
 
     # Анализ распределения
     value_counts = df_clean["target"].value_counts().sort_index()
     total = len(df_clean)
 
-    print(f"\nОбщее количество записей: {total:,}")
-    print(
-        f"Хорошие займы (0): {value_counts.get(0, 0):,} ({value_counts.get(0, 0) / total * 100:.1f}%)"
-    )
-    print(
-        f"Плохие займы (1): {value_counts.get(1, 0):,} ({value_counts.get(1, 0) / total * 100:.1f}%)"
-    )
+    print(f"\nПосле преобразования:")
+    print(f"Всего записей: {total:,}")
+    print(f"Хорошие займы (0): {value_counts.get(0, 0):,} ({value_counts.get(0, 0) / total * 100:.1f}%)")
+    print(f"Плохие займы (1): {value_counts.get(1, 0):,} ({value_counts.get(1, 0) / total * 100:.1f}%)")
 
-    # Проверяем, что есть записи в обоих классах
+    # Важная проверка: убедимся, что у нас есть оба класса
     if 0 not in value_counts.index or 1 not in value_counts.index:
-        print(
-            "\nПРЕДУПРЕЖДЕНИЕ: Отсутствуют записи одного из классов целевой переменной!"
-        )
-        if 0 not in value_counts.index:
-            print("  - Нет хороших займов (класс 0)")
-        if 1 not in value_counts.index:
-            print("  - Нет плохих займов (класс 1)")
+        print(f"\n КРИТИЧЕСКАЯ ОШИБКА: Отсутствуют записи одного из классов!")
+        print(f"   Только один класс: {value_counts.index.tolist()}")
+        print("   Модель не сможет обучаться!")
+        raise ValueError("Только один класс в целевой переменной")
 
     return {
         "df_clean": df_clean,
@@ -601,21 +593,26 @@ def main():
     # Получаем правильный путь к данным
     script_dir = Path(__file__).parent
     project_root = script_dir.parent.parent
-    data_path = project_root / "data" / "raw" / "accepted_2007_to_2018Q4.csv"
 
-    print(f"Ищем файл по пути: {data_path}")
+    # Пробуем найти файл данных
+    possible_paths = [
+        project_root / "data" / "raw" / "UCI_Credit_Card.csv",
+        project_root / "data" / "raw" / "accepted_2007_to_2018Q4.csv",
+        project_root / "data" / "raw" / "credit_card.csv"
+    ]
 
-    if not data_path.exists():
-        print(f"Файл данных не найден: {data_path}")
+    data_path = None
+    for path in possible_paths:
+        if path.exists():
+            data_path = path
+            break
 
-        # Покажем какие файлы есть в папке data/raw
+    if not data_path:
+        print("Файл данных не найден! Доступные файлы:")
         raw_dir = project_root / "data" / "raw"
         if raw_dir.exists():
-            print(f"\nФайлы в {raw_dir}:")
             for file in raw_dir.glob("*.csv"):
                 print(f"  - {file.name}")
-        else:
-            print(f"\nДиректория {raw_dir} не существует")
         return
 
     # Загружаем данные

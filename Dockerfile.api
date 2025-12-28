@@ -1,0 +1,48 @@
+# Dockerfile.api - Многостадийный сборка для FastAPI
+FROM python:3.12-slim as builder
+
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Копирование зависимостей
+COPY requirements-api.txt .
+
+# Установка зависимостей в виртуальное окружение
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements-api.txt
+
+# --- Production stage ---
+FROM python:3.12-slim
+
+# Копирование виртуального окружения из builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Создание пользователя приложения
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+WORKDIR /app
+
+# Копирование кода
+COPY api/ ./api/
+COPY models/onnx_final/ ./models/onnx_final/
+
+# Создание необходимых директорий
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appuser /app
+
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import requests; r = requests.get('http://localhost:8000/api/v1/health', timeout=2); exit(0 if r.status_code == 200 else 1)"
+
+EXPOSE 8000
+
+CMD ["uvicorn", "api.credit_scoring_api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
