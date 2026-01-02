@@ -1,0 +1,4 @@
+# Пример файла переменных (заполните своими значениями)
+yandex_cloud_id  = "your_cloud_id_here"
+yandex_folder_id = "your_folder_id_here"
+environment      = "dev"
