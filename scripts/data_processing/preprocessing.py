@@ -167,7 +167,11 @@ def handle_missing_values(
     for col in numeric_columns:
         if col in df_clean.columns and df_clean[col].isnull().any():
             median_val = df_clean[col].median()
-            df_clean[col].fillna(median_val, inplace=True)
+            # ВАЖНО: присваиваем результат обратно в df_clean.
+            # df_clean[col].fillna(..., inplace=True) при включенном
+            # Copy-on-Write в pandas (>=2.0) является no-op, так как
+            # df_clean[col] возвращает копию, а не представление.
+            df_clean[col] = df_clean[col].fillna(median_val)
             print(
                 f"  {col}: заполнено {df_clean[col].isnull().sum()} пропусков медианой ({median_val:.2f})"
             )
@@ -178,7 +182,7 @@ def handle_missing_values(
             mode_val = (
                 df_clean[col].mode()[0] if not df_clean[col].mode().empty else "missing"
             )
-            df_clean[col].fillna(mode_val, inplace=True)
+            df_clean[col] = df_clean[col].fillna(mode_val)
             print(
                 f"  {col}: заполнено {df[col].isnull().sum()} пропусков модой ('{mode_val}')"
             )

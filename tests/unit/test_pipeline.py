@@ -53,6 +53,9 @@ class TestPipeline:
         """Тест успешного выполнения main функции."""
         with (
             patch("scripts.run_pipeline.check_data_exists", return_value=True),
+            patch(
+                "scripts.run_pipeline.check_catboost_installation", return_value=True
+            ),
             patch("scripts.run_pipeline.create_directories"),
             patch("scripts.run_pipeline.run_script") as mock_run,
             patch("sys.argv", ["run_pipeline.py"]),

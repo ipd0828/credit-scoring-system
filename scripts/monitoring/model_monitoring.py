@@ -22,7 +22,6 @@ import joblib
 import mlflow
 import numpy as np
 import pandas as pd
-from mlflow.tracking import MlflowClient
 
 # Импорты для статистических тестов
 from scipy import stats
@@ -86,7 +85,10 @@ class ModelMonitor:
         self.reference_data = self._load_reference_data()
 
         # Настройка MLflow
-        self.mlflow_client = MlflowClient()
+        # MLflow-клиент намеренно не создаем в __init__: его создание
+        # требует доступного tracking-сервера и ломает инициализацию
+        # в средах без MLflow (например, в CI/юнит-тестах). Клиент
+        # не используется в текущей логике мониторинга.
 
         logger.info(f"Монитор модели инициализирован: {model_path}")
 
