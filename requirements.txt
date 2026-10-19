@@ -1,5 +1,11 @@
 # Core ML and Data Science
-numpy>=2.0.0
+# ВАЖНО: catboost==1.2.5 собран с numpy 1.x (dtype size 88).
+# numpy 2.x (dtype size 96) вызывает:
+#   ValueError: numpy.dtype size changed, may indicate binary incompatibility.
+# Поэтому numpy обязан быть <2.0.
+# scipy тоже обязан быть <1.14, т.к. scipy>=1.18 требует numpy>=2.0.
+numpy>=1.26.0,<2.0
+scipy>=1.11.0,<1.14
 pandas>=2.2.0
 scikit-learn>=1.4.0
 joblib>=1.3.2
