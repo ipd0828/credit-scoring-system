@@ -78,6 +78,3 @@ kubernetes>=28.1.0
 python-dotenv>=1.0.0
 click>=8.1.7
 tqdm>=4.66.1
-
-# Progress bars
-tqdm>=4.66.1
