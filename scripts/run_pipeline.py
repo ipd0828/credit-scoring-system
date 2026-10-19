@@ -99,7 +99,7 @@ def run_custom_data_preparation() -> bool:
     try:
         # Запускаем prepare_data.py как отдельный скрипт
         script_path = project_root / "scripts" / "prepare_data.py"
-        data_path = project_root / "data" / "raw" / "UCI_Credit_Card.csv"
+        data_path = project_root / "data" / "raw" / "accepted_2007_to_2018Q4.csv"
         output_path = project_root / "data" / "processed_custom"
 
         if not script_path.exists():
@@ -213,11 +213,13 @@ def check_data_exists() -> bool:
     Returns:
         bool: True если данные найдены
     """
-    data_path = project_root / "data" / "raw" / "UCI_Credit_Card.csv"
+    data_path = project_root / "data" / "raw" / "accepted_2007_to_2018Q4.csv"
 
     if not data_path.exists():
         print(f"Исходные данные не найдены: {data_path}")
-        print("Пожалуйста, поместите файл UCI_Credit_Card.csv в папку data/raw/")
+        print(
+            "Пожалуйста, поместите файл accepted_2007_to_2018Q4.csv в папку data/raw/"
+        )
         return False
 
     print(f"Исходные данные найдены: {data_path}")
