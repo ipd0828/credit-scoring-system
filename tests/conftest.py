@@ -270,12 +270,14 @@ def temp_model_file(sample_model, sample_processed_data):
 @pytest.fixture
 def mock_mlflow():
     """Мокает MLflow для тестов."""
-    with patch("mlflow.set_tracking_uri"), patch("mlflow.create_experiment"), patch(
-        "mlflow.set_experiment"
-    ), patch("mlflow.start_run") as mock_start_run, patch("mlflow.log_params"), patch(
-        "mlflow.log_metrics"
-    ), patch(
-        "mlflow.log_model"
+    with (
+        patch("mlflow.set_tracking_uri"),
+        patch("mlflow.create_experiment"),
+        patch("mlflow.set_experiment"),
+        patch("mlflow.start_run") as mock_start_run,
+        patch("mlflow.log_params"),
+        patch("mlflow.log_metrics"),
+        patch("mlflow.log_model"),
     ):
         mock_run = MagicMock()
         mock_run.info.run_id = "test-run-id"

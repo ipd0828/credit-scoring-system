@@ -89,8 +89,7 @@ def update_hooks():
 
 def show_help():
     """Показывает справку по использованию."""
-    print(
-        """
+    print("""
 Настройка Pre-commit Hooks для проекта кредитного скоринга
 
 Использование:
@@ -117,8 +116,7 @@ def show_help():
     • markdownlint - проверка Markdown файлов
     • detect-secrets - поиск секретов в коде
     • hadolint - проверка Dockerfile
-    """
-    )
+    """)
 
 
 def main():

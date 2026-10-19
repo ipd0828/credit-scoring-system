@@ -99,13 +99,11 @@ def main():
     with tab1:
         st.header("🎯 Предсказание Кредитного Скоринга")
 
-        st.info(
-            """
+        st.info("""
         **Используемые признаки (6):**
         - 💰 Кредитный лимит | 👫 Пол | 💍 Семейное положение  
         - 🎂 Возраст | 💳 Статус платежей | 🎓 Образование
-        """
-        )
+        """)
 
         # Основная информация
         col1, col2 = st.columns(2)
@@ -230,20 +228,17 @@ def main():
                 # Display prediction result
                 if prediction["prediction"] == 0:
                     st.success("### ✅ Кредит Одобрен!")
-                    st.info(
-                        f"""
+                    st.info(f"""
                     **Детали решения:**
                     - 🤖 Модель: {prediction["model_version"]}
                     - 🎯 Уверенность: {prediction["confidence"].title()}
                     - 📊 Оценка риска: {prediction["risk_score"]:.1f}/100
                     - 📈 Вероятность возврата: {prediction["probability"]:.1%}
                     - ⏱️ Время анализа: {time_display}
-                    """
-                    )
+                    """)
                 else:
                     st.error("### ❌ Высокий риск дефолта")
-                    st.warning(
-                        f"""
+                    st.warning(f"""
                     **Детали решения:**
                     - 🤖 Модель: {prediction["model_version"]}
                     - 🎯 Уверенность: {prediction["confidence"].title()}
@@ -251,8 +246,7 @@ def main():
                     - 📉 Вероятность дефолта: {prediction["probability"]:.1%}
                     - ⏱️ Время анализа: {time_display}
                     - 💡 Рекомендация: Требуется дополнительная проверка
-                    """
-                    )
+                    """)
 
                 # Feature importance chart
                 if prediction.get("features_importance"):
@@ -445,8 +439,7 @@ def main():
 
         else:
             st.error("### ❌ Модель не загружена")
-            st.warning(
-                """
+            st.warning("""
             **Возможные причины:**
             - Модель не была загружена при запуске бэкенда
             - Файлы модели отсутствуют или повреждены
@@ -454,8 +447,7 @@ def main():
 
             **Решение:**
             Проверьте консоль бэкенда для получения подробной информации об ошибке.
-            """
-            )
+            """)
 
 
 if __name__ == "__main__":

@@ -51,10 +51,11 @@ class TestPipeline:
 
     def test_main_success(self):
         """Тест успешного выполнения main функции."""
-        with patch("scripts.run_pipeline.check_data_exists", return_value=True), patch(
-            "scripts.run_pipeline.create_directories"
-        ), patch("scripts.run_pipeline.run_script") as mock_run, patch(
-            "sys.argv", ["run_pipeline.py"]
+        with (
+            patch("scripts.run_pipeline.check_data_exists", return_value=True),
+            patch("scripts.run_pipeline.create_directories"),
+            patch("scripts.run_pipeline.run_script") as mock_run,
+            patch("sys.argv", ["run_pipeline.py"]),
         ):
             # Настраиваем мок для успешного выполнения всех шагов
             mock_run.return_value = {"success": True, "return_code": 0, "duration": 1.0}
@@ -64,8 +65,9 @@ class TestPipeline:
 
     def test_main_no_data(self):
         """Тест main функции без данных."""
-        with patch("scripts.run_pipeline.check_data_exists", return_value=False), patch(
-            "sys.argv", ["run_pipeline.py"]
+        with (
+            patch("scripts.run_pipeline.check_data_exists", return_value=False),
+            patch("sys.argv", ["run_pipeline.py"]),
         ):
             result = main()
             assert result == 1

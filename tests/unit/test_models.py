@@ -241,8 +241,10 @@ class TestMLflowTracking:
 
     def test_mlflow_tracker_initialization(self):
         """Тест инициализации MLflow трекера."""
-        with patch("mlflow.set_tracking_uri"), patch("mlflow.create_experiment"), patch(
-            "mlflow.set_experiment"
+        with (
+            patch("mlflow.set_tracking_uri"),
+            patch("mlflow.create_experiment"),
+            patch("mlflow.set_experiment"),
         ):
             tracker = MLflowTracker("test-experiment")
 
